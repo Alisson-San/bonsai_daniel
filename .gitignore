@@ -9,3 +9,4 @@ coverage/
 
 # Windows download metadata (WSL)
 *:Zone.Identifier
+.ssr
