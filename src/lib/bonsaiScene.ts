@@ -166,11 +166,11 @@ function canvasTexture(THREE: Three, size: number, paint: (context: CanvasRender
 }
 
 // The logo nameplate: notched corners, double gold border, "BONSAI" over "DANIEL BOURSCHEID", red leaf on the bottom tab.
-const PLAQUE = { width: 2048, height: 640, top: 40 };
+const PLAQUE = { width: 2048, height: 720, top: 40, body: 330 };
 // The band fits the border inset (screen-constant, so larger on small screens) plus 'BONSAI' with equal room above and below.
 const plaqueLayout = (border: { outer: number; gap: number; inner: number }) => {
   const step = PLAQUE.top + border.outer + border.gap + border.inner + 16 + 60 + 16;
-  return { step, bottom: step + 254 };
+  return { step, bottom: step + PLAQUE.body };
 };
 // Border in screen pixels; converted to canvas pixels from the plaque's on-screen width on every resize.
 export const PLAQUE_BORDER = { outer: 2.5, inner: 1.25, gap: 7 };
@@ -245,13 +245,18 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
   c.textBaseline = 'alphabetic'; c.fillStyle = gold(baseline - 64, baseline + 2);
   const word = spaced('BONSAI', baseline, 96, 30), ruleStart = cx - bandHalf + 70, ruleEnd = cx + bandHalf - 70;
   c.fillRect(ruleStart, baseline - 31, cx - word / 2 - 40 - ruleStart, 2.5); c.fillRect(cx + word / 2 + 40, baseline - 31, ruleEnd - (cx + word / 2 + 40), 2.5);
+  // Condensed like the logo lettering and always inside the inner border, with clear room above and below:
+  // the border is screen-constant, so on phones it takes more of the plate and the name shrinks to fit.
+  const inset = border.outer + border.gap + border.inner;
   c.font = '600 232px "Cormorant Garamond", Georgia, serif';
-  // Condensed like the logo lettering and always inside the inner border.
-  const nameWidth = c.measureText('DANIEL BOURSCHEID').width, fit = Math.min(.8, (R - L - 2 * (border.outer + border.gap + border.inner + 72)) / nameWidth);
+  const capHeight = c.measureText('DANIEL BOURSCHEID').actualBoundingBoxAscent || 146;
+  const size = 232 * Math.min(1, (B - S - 2 * (inset + 36)) / capHeight), cap = capHeight * size / 232;
+  c.font = `600 ${size}px "Cormorant Garamond", Georgia, serif`;
+  const nameWidth = c.measureText('DANIEL BOURSCHEID').width, fit = Math.min(.8, (R - L - 2 * (inset + 72)) / nameWidth);
   c.save(); c.translate(cx, 0); c.scale(fit, 1); c.textAlign = 'center';
-  const nameBaseline = (S + B) / 2 + 73;
+  const nameBaseline = (S + B + cap) / 2;
   c.fillStyle = 'rgba(0,0,0,.65)'; c.fillText('DANIEL BOURSCHEID', 4, nameBaseline + 6);
-  c.fillStyle = gold(nameBaseline - 150, nameBaseline + 6); c.fillText('DANIEL BOURSCHEID', 0, nameBaseline);
+  c.fillStyle = gold(nameBaseline - cap, nameBaseline + 6); c.fillText('DANIEL BOURSCHEID', 0, nameBaseline);
   c.restore();
   c.save(); c.translate(cx, B + 70); c.scale(1.3, 1.3); c.fillStyle = '#D9232E'; c.fill(new Path2D(acerOutline)); c.restore();
 }
