@@ -1,0 +1,161 @@
+/* Spatial direction: WebGL hero, showcase stage / arch frames, untouched photography in the modal. */
+:root,[data-theme="dark"]{--container:min(1200px, 100% - 32px);--enso-core:#F3E5AB;--contact-shadow:rgba(0,0,0,.55);--glass:rgba(20,40,28,.6);--glass-line:rgba(212,175,55,.3);--header-bg:rgba(10,20,14,.72);--benefit:#d6dccf}
+[data-theme="light"]{--enso-core:#D4AF37;--contact-shadow:rgba(40,32,18,.3);--glass:rgba(255,255,255,.72);--glass-line:rgba(158,123,28,.35);--header-bg:rgba(247,245,240,.78);--benefit:#2c3a2f}
+
+/* ---- One container for every section: same left/right edges everywhere ---- */
+.section-shell,.site-header,.site-footer,.hero.hero-spatial{max-width:none;margin-left:0;margin-right:0;padding-left:calc((100% - var(--container)) / 2);padding-right:calc((100% - var(--container)) / 2)}
+
+/* ---- Gold buttons: the gradient must also cover the 1px transparent border ---- */
+.button-gold{background-origin:border-box}
+
+/* ---- Fixed translucent header that tucks away while scrolling down ---- */
+.site-header{position:sticky;top:0;z-index:50;height:72px;background:var(--header-bg);-webkit-backdrop-filter:blur(16px) saturate(1.2);backdrop-filter:blur(16px) saturate(1.2);transition:transform .4s cubic-bezier(.16,1,.3,1),background-color .35s}
+.site-header.is-hidden{transform:translateY(-100%)}
+.site-header .wordmark{margin-left:0}
+.site-header .brand-small{width:84px;height:52px}
+@media(max-width:580px){.site-header{height:64px}.site-header .brand-small{width:72px;height:45px}.curation-toggle{padding:9px 11px}}
+
+/* ---- Hero 3D ---- */
+.hero.hero-spatial{min-height:calc(100svh - 72px);isolation:isolate}
+#bonsai-3d-hero{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none;opacity:0;transition:opacity .4s ease-out}
+/* Dark mode: forest green with a soft felt grain behind the scene. */
+:root:not([data-theme="light"]) .hero-spatial,[data-theme="dark"] .hero-spatial{background:radial-gradient(ellipse at 72% 48%,#1b3524 0%,transparent 62%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .7  0 0 0 0 .55  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),#0B1911}
+.hero-spatial.is-ready #bonsai-3d-hero{opacity:1}
+/* The canvas sits under the copy (z-index), so leaves drift behind the text across the whole hero. */
+.hero-spatial::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(0deg,var(--bg) 0%,transparent 14%)}
+.hero-spatial .hero-copy{position:relative;z-index:2}
+.hero-spatial .scroll-cue{z-index:2;left:calc((100% - var(--container)) / 2)}
+.hero-spatial:not(.is-failed) .hero-art{visibility:hidden}
+.hero-benefits>div{font-size:13px;line-height:1.45;color:var(--benefit);font-weight:500}
+.hero-benefits svg{color:var(--gold);width:24px;height:27px}
+.hero-benefits{max-width:540px;gap:16px}
+@media(max-width:800px){
+ .hero.hero-spatial{min-height:calc(100svh - 64px);align-content:start}
+}
+@media(max-width:580px){
+ .hero-benefits{grid-template-columns:1fr;gap:8px}
+ .hero-benefits>div{font-size:13px;align-items:center;gap:10px}
+ .hero-benefits svg{width:20px;height:23px}
+}
+
+/* ---- Hero as a cover: centred 3D stage on top, copy centred below ---- */
+.hero.hero-spatial{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;min-height:0;padding-top:0;padding-bottom:72px;gap:0}
+.hero-stage{position:relative;width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);height:clamp(440px,66svh,800px);flex:none}
+.hero-stage .acer-canvas{z-index:0}
+.hero-fallback-brand{position:absolute;inset:8% 0 4%;display:flex;align-items:center;justify-content:center;z-index:1}
+.hero-fallback-brand .brand-hero{width:min(560px,86vw);height:auto;aspect-ratio:1586/992}
+.hero-spatial .hero-copy{display:flex;flex-direction:column;align-items:center;max-width:780px;margin-top:-6px}
+.hero-spatial .hero-eyebrow{justify-content:center}
+.hero-spatial .hero-eyebrow::after{content:"";width:28px;height:1px;background:var(--gold)}
+.hero-spatial h1{text-align:center}
+.hero-spatial .hero-description{max-width:540px;margin-left:auto;margin-right:auto}
+.hero-spatial .hero-benefits{max-width:680px;width:100%;justify-items:center}
+.hero-spatial .hero-benefits>div{text-align:left}
+.hero-spatial::before{display:none}
+@media(max-width:800px){.hero-stage{height:min(56svh,94vw)}.hero.hero-spatial{min-height:0;padding-bottom:56px}}
+/* The nameplate already says the brand; the editable eyebrow stays visible in curation mode. */
+.site:not(.is-editing) .hero-spatial.is-ready .hero-eyebrow{display:none}
+@media(max-width:580px){.hero-spatial .hero-benefits{justify-items:start;max-width:320px}}
+
+/* ---- Showcase grid ---- */
+.plant-grid.tile-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:56px 32px;padding-top:12px}
+.tile-grid>*{flex:0 1 370px;min-width:0}
+.plant-tile{position:relative;display:flex;flex-direction:column}
+.tile-visual{position:relative}
+
+/* Arch frame: the real photo, no fade and no mask. Top radius = half the width (semicircle). */
+.arch-frame{display:block;position:relative;width:100%;aspect-ratio:4/5;padding:0;overflow:hidden;cursor:pointer;border:1px solid var(--glass-line);border-radius:50% 50% 24px 24px / 40% 40% 24px 24px;background:var(--secondary);box-shadow:0 24px 50px -24px var(--contact-shadow)}
+.arch-frame>img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;transition:transform .9s cubic-bezier(.16,1,.3,1),opacity .7s}
+.arch-frame>img.arch-secondary{opacity:0}
+@media(hover:hover){.arch-frame:hover>img{transform:scale(1.03)}.arch-frame:hover>img.arch-secondary{opacity:1}}
+.plant-tile.status-vendido .arch-frame>img,.plant-tile.status-vendido .vitrine-plant>img{filter:grayscale(.8) brightness(.85)}
+
+/* Stage for a cut-out showcase photo */
+.vitrine-stage{position:relative;aspect-ratio:4/5;perspective:900px}
+.vitrine-rig{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .55s cubic-bezier(.16,1,.3,1)}
+.vitrine-stage:hover .vitrine-rig{transition-duration:.15s}
+.vitrine-ring{position:absolute;left:50%;top:42%;width:84%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--gold) 75%,transparent);background:radial-gradient(circle,color-mix(in srgb,var(--enso-core) 16%,transparent),transparent 68%);box-shadow:0 0 50px -10px color-mix(in srgb,var(--gold) 45%,transparent);transform:translateZ(-30px)}
+.vitrine-contact{position:absolute;left:50%;bottom:5%;width:68%;height:9%;translate:-50% 0;border-radius:50%;background:radial-gradient(ellipse at center,var(--contact-shadow),transparent 70%);filter:blur(5px);transform:translateZ(-8px)}
+.vitrine-plant{position:absolute;inset:3% 6% 9%;padding:0;border:0;background:none;cursor:pointer;transform:translateZ(30px)}
+.vitrine-plant>img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 16px 18px rgba(0,0,0,.32))}
+@media(prefers-reduced-motion:reduce){.vitrine-rig{transform:none;transition:none}}
+
+/* Status and code: same rounded glass pill as the rest */
+.tile-visual>.status{position:absolute;left:14px;bottom:14px;border-radius:999px;padding:7px 12px;font-size:10px;background:var(--glass);border:1px solid var(--glass-line);color:var(--text);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.tile-code{position:absolute;right:14px;bottom:14px;border-radius:999px;padding:7px 12px;font-size:10px;letter-spacing:1px;background:var(--glass);border:1px solid var(--glass-line);color:var(--gold-bright);font-variant-numeric:lining-nums tabular-nums;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+[data-theme="light"] .tile-code{color:var(--gold)}
+.tile-visual>.card-admin{position:absolute;top:10px;right:10px;z-index:6;display:flex;gap:4px;padding:5px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(12px)}
+.tile-visual>.card-admin .icon-button{color:var(--text)}
+
+/* Body: equal-height cards, title reserves two lines, actions pinned to the bottom */
+.tile-body{display:flex;flex-direction:column;flex:1;padding-top:20px}
+.tile-body .eyebrow{font-size:9px;letter-spacing:2px}
+.tile-body .card-heading{line-height:1.1;min-height:2.2em;margin:8px 0 4px;display:flex;align-items:flex-end}
+.tile-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pill{display:inline-flex;flex-direction:column;justify-content:center;gap:1px;padding:7px 14px;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);font-size:13px;font-weight:500;line-height:1.25;color:var(--text);white-space:nowrap;font-variant-numeric:lining-nums tabular-nums}
+.pill small{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pill.price{font-family:'Cormorant Garamond',Georgia,serif;font-size:21px;font-weight:600;color:var(--gold-bright);font-feature-settings:"lnum" 1,"tnum" 1}
+.pill.price small{font-family:Inter,sans-serif}
+.detail-price strong,.commercial-price strong,.tile-price-edit{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1}
+.tile-price-edit{display:flex;align-items:baseline;gap:10px;margin-top:12px;font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--gold-bright)}
+.tile-price-edit small{font-family:Inter,sans-serif;font-size:8px;letter-spacing:2px;color:var(--muted)}
+.tile-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:20px}
+.tile-actions .button{flex:1 1 auto;padding:12px 16px;min-height:44px;font-size:11px;gap:10px}
+
+/* Add card in the arch language */
+.tile-grid>.add-card{background:transparent;aspect-ratio:4/5;min-height:0;align-self:flex-start;border:1px dashed var(--glass-line);border-radius:50% 50% 24px 24px / 40% 40% 24px 24px;color:var(--gold)}
+.tile-grid>.add-card:hover{border-color:var(--gold)}
+
+/* ---- Indicators: sun, drop, leaf on a 1–5 scale ---- */
+.indicators{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:14px}
+.indicator-scale{display:inline-flex;align-items:center;gap:2px;color:var(--gold)}
+.indicator-scale svg{opacity:.28;fill:none}
+.indicator-scale svg.filled,.indicator-scale button.filled svg{opacity:1;fill:currentColor}
+.indicator-scale button{display:inline-flex;padding:3px;border:0;background:none;color:inherit;border-radius:4px}
+.indicator-scale button:hover svg{opacity:.8}
+.indicator-rega .indicator-scale{color:color-mix(in srgb,var(--gold) 55%,var(--text))}
+.indicator-cuidado .indicator-scale{color:var(--accent)}
+.indicators-large{display:grid;gap:16px;margin:0 0 22px;padding:20px 0;border-bottom:1px solid var(--line)}
+.indicators-large .indicator{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.indicator-label{font-size:10px;color:var(--muted);line-height:1.5}
+.indicator-label strong{display:block;font-size:12px;font-weight:400;color:var(--text);margin-top:2px}
+
+/* ---- Modal: the plant as it really is ---- */
+.raw-photo-frame{position:relative;border-radius:6px;overflow:hidden;background:#0b0f0c;border:1px solid var(--line)}
+.raw-photo{position:relative;overflow:hidden}
+.raw-photo>img{display:block;width:100%;height:auto;max-height:min(72vh,720px);object-fit:contain;margin:0 auto;transition:transform .45s cubic-bezier(.16,1,.3,1);cursor:zoom-in}
+.raw-photo-frame.is-zoomed .raw-photo>img{transform:scale(2.2);cursor:zoom-out}
+.raw-photo-label{position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:7px;font-size:9px;letter-spacing:.6px;color:#F4F1EA;background:#0a140ecc;backdrop-filter:blur(12px);border:1px solid #f3e5ab33;padding:7px 11px;border-radius:999px;pointer-events:none}
+.raw-photo-caption{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;color:var(--muted);margin:12px 2px 0}
+.raw-photo-caption svg{color:var(--gold);margin-top:2px}
+::view-transition-group(plant-photo){animation-duration:.6s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.35s}
+
+/* ---- Cultivator photo (editable) ---- */
+.cultivator-edit{position:absolute;left:14px;top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;z-index:2}
+.cultivator-edit .button{background:var(--glass);backdrop-filter:blur(12px)}
+
+/* ---- Curation: showcase upload ---- */
+.vitrine-upload{margin-top:20px;padding:16px;border:1px dashed var(--glass-line);border-radius:6px;display:grid;gap:10px}
+.vitrine-upload>strong{font-size:12px;font-weight:600;color:var(--gold-bright)}
+.vitrine-upload>p{font-size:11px;line-height:1.6;color:var(--muted)}
+.vitrine-upload-actions{display:flex;flex-wrap:wrap;gap:8px}
+.vitrine-preview{height:160px;border-radius:6px;background:repeating-conic-gradient(#ffffff10 0 25%,transparent 0 50%) 0 0/16px 16px}
+.vitrine-preview>img{width:100%;height:100%;object-fit:contain}
+
+/* ---- Footer aligned to the container ---- */
+.site-footer{gap:16px}
+.site-footer>.wordmark{flex:initial}
+.site-footer>span{flex:1;text-align:center;font-size:11px}
+
+@media(max-width:580px){
+ .plant-grid.tile-grid{gap:44px}
+ .tile-grid>*{flex-basis:100%}
+ .site-footer>span{order:initial;width:auto;text-align:center;font-size:10px}
+ .site-footer{flex-wrap:nowrap}
+}
+@media(prefers-reduced-motion:reduce){.raw-photo>img,.arch-frame>img,.site-header{transition:none}}
+
+/* Falling leaves overlay: above page content (under the header and dialogs), never catches the pointer. */
+.falling-leaves{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:45}
+@media(prefers-reduced-motion:reduce){.falling-leaves{display:none}}

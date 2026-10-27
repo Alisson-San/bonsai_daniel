@@ -1,0 +1,5 @@
+Coloque aqui um modelo 3D com o nome bonsai.glb para substituir a árvore procedural do hero.
+- Formato: glTF binário (.glb), de preferência com compressão Draco, até ~5-8 MB.
+- O modelo pode incluir o vaso; ele é escalado para a altura do palco e apoiado no pedestal.
+- Confira a licença comercial do modelo antes de publicar.
+Sem este arquivo (ou se ele falhar), o site usa a árvore procedural.

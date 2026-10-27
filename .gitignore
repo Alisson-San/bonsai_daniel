@@ -1,0 +1,11 @@
+node_modules/
+.local-tools/
+dist/
+.vercel/
+.env*
+!.env.example
+coverage/
+*.log
+
+# Windows download metadata (WSL)
+*:Zone.Identifier
