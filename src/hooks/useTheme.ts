@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { resolveTheme, type Theme } from '../lib/theme';
 const key = 'bourscheid-theme';
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+  const [theme, setTheme] = useState<Theme>(() => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
   const [preference, setPreference] = useState<string | null>(() => { try { return localStorage.getItem(key); } catch { return null; } });
   useEffect(() => {
     const media = matchMedia('(prefers-color-scheme: dark)');

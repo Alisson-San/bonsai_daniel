@@ -136,6 +136,12 @@ Foram inspecionadas prévias geométricas das duas fotos originais nos enquadram
 
 Verificado em Chromium headless (WebGL por SwiftShader), em 1440×900 e 390×844, nos temas escuro e claro: cena 3D, vitrine e modal renderizam sem erros no console.
 
+## Desempenho no celular
+
+- **Página pré-renderizada:** `npm run build` gera o HTML da página inicial (`src/entry-server.tsx` + `scripts/prerender.mjs`). Texto, catálogo e fotos aparecem antes do JavaScript; depois o app assume a página.
+- **Imagem estática do hero:** em telas até 800px, `public/images/hero-poster-{dark,light}.webp` mostra a cena 3D pronta no primeiro quadro; a cena ao vivo começa na mesma composição, sem a animação de entrada, e aparece por cima. Ao mudar a cena 3D, gere de novo: `npm run build && npm run preview` e, em outro terminal, `node scripts/poster.cjs` (requer Playwright com Chromium e ImageMagick).
+- O 3D só começa com a página ociosa e compila os shaders antes do primeiro quadro, sem travar a rolagem. Fontes do Google carregam sem bloquear a renderização.
+
 ## Revisão visual (container, vitrine com palco, experiência)
 
 - **Container único** `--container: min(1200px, 100% - 32px)` em header, hero, vitrine, cultivador, CTA e rodapé (bordas alinhadas em 1440/1024/390 px, sem scroll horizontal).

@@ -54,7 +54,7 @@
 .hero-spatial::before{display:none}
 @media(max-width:800px){.hero-stage{height:min(56svh,94vw)}.hero.hero-spatial{min-height:0;padding-bottom:56px}}
 /* The nameplate already says the brand; the editable eyebrow stays visible in curation mode. */
-.site:not(.is-editing) .hero-spatial.is-ready .hero-eyebrow{display:none}
+.site:not(.is-editing) .hero-spatial:not(.is-failed) .hero-eyebrow{display:none}
 @media(max-width:580px){.hero-spatial .hero-benefits{justify-items:start;max-width:320px}}
 
 /* ---- Showcase grid ---- */
@@ -159,3 +159,5 @@
 /* Falling leaves overlay: above page content (under the header and dialogs), never catches the pointer. */
 .falling-leaves{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:45}
 @media(prefers-reduced-motion:reduce){.falling-leaves{display:none}}
+/* Phones: a still of the finished 3D scene shows with the first paint and fades out once the live scene is ready (scripts/poster.cjs). */
+@media(max-width:800px){.hero-spatial .hero-stage::before{content:"";position:absolute;inset:0;pointer-events:none;background:url('/images/hero-poster-dark.webp') center/contain no-repeat;transition:opacity .5s ease-out .2s}[data-theme="light"] .hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-light.webp')}.hero-spatial.is-ready .hero-stage::before,.hero-spatial.is-failed .hero-stage::before{opacity:0}}

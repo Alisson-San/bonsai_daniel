@@ -14,7 +14,8 @@ export function loadThree() {
 
 export type BonsaiScene = { setTheme: (theme: Theme) => void; dispose: () => void };
 export type PageRect = { x: number; y: number; width: number; height: number };
-type Options = { theme: Theme; reduced: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void };
+// entrance: false starts on the finished composition (it replaces a still of it on phones).
+type Options = { theme: Theme; reduced: boolean; entrance?: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void };
 
 // Optional real model: drop a .glb here and it replaces the procedural tree and pot on the same stage.
 export const HERO_MODEL_URL = '/models/bonsai.glb';
@@ -261,7 +262,8 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
   c.save(); c.translate(cx, B + 70); c.scale(1.3, 1.3); c.fillStyle = '#D9232E'; c.fill(new Path2D(acerOutline)); c.restore();
 }
 
-export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, onFirstFrame, onCanopy }: Options): BonsaiScene {
+export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, entrance: animateEntrance = true, onFirstFrame, onCanopy }: Options): BonsaiScene {
+  const settled = reduced || !animateEntrance;
   const compact = innerWidth < 760;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, compact ? 1.5 : 2));
@@ -421,7 +423,7 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
   const leafShape = leafGeometry(THREE);
   const perOuter = compact ? 22 : 30, perInner = compact ? 14 : 20;
   const count = clusters.reduce((sum, cluster) => sum + (cluster.inner ? perInner : perOuter), 0);
-  const motion = { uTime: { value: 0 }, uReveal: { value: reduced ? 2 : 0 } };
+  const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 } };
   const delays = new Float32Array(count);
   const patch = (shader: { uniforms: Record<string, { value: unknown }>; vertexShader: string }) => {
     shader.uniforms.uTime = motion.uTime; shader.uniforms.uReveal = motion.uReveal;
@@ -498,7 +500,7 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
   for (const cluster of clusters) canopyBox.expandByPoint(cluster.center);
   canopyBox.expandByScalar(.45); canopyBox.translate(new V(0, tree.position.y, 0));
   const archMaterial = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(palettes[theme].gold) }, uDraw: { value: reduced ? 1 : 0 } },
+    uniforms: { uColor: { value: new THREE.Color(palettes[theme].gold) }, uDraw: { value: settled ? 1 : 0 } },
     vertexShader: 'varying float vU;varying vec3 vN;varying vec3 vView;void main(){vU=uv.x;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vView=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
     fragmentShader: 'uniform vec3 uColor;uniform float uDraw;varying float vU;varying vec3 vN;varying vec3 vView;void main(){float ends=1.;float drawn=step(abs(vU-.5)*2.,uDraw);float sheen=.78+.42*pow(max(dot(vN,vView),0.),3.);gl_FragColor=vec4(uColor*sheen,ends*drawn);\n#include <colorspace_fragment>\n}',
     transparent: true, depthWrite: false,
@@ -574,7 +576,7 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   // The entrance runs on wall-clock time, so slow devices still finish it in 1.5 s.
   let frameAverage = 1 / 60, frameCount = 0;
-  let frame = 0, visible = true, first = true, elapsed = 0, previous = 0, entrance = reduced ? 99 : 0, entranceStart = 0;
+  let frame = 0, visible = true, first = true, elapsed = 0, previous = 0, entrance = settled ? 99 : 0, entranceStart = 0;
   const fading: T.Material[] = [potMaterial, soilMaterial, mossMaterial, bark, emblemMaterial, plaqueMaterial];
   const resize = () => {
     const host = canvas.parentElement, box = host?.getBoundingClientRect(); if (!host || !box) return;
@@ -647,7 +649,7 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
     await Promise.race([environmentReady, new Promise(resolve => setTimeout(resolve, 4000))]);
     if (disposed) return;
     await renderer.compileAsync(scene, camera);
-    if (reduced || disposed) return;
+    if (settled || disposed) return;
     for (const material of fading) material.transparent = true;
     await renderer.compileAsync(scene, camera);
   };

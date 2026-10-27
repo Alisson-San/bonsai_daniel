@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { palmateLeaf } from '../lib/acer';
 import type { PageRect } from '../lib/bonsaiScene';
@@ -28,6 +28,9 @@ function sprite(color: string, blur: number) {
 // The canvas never takes pointer events, so links, buttons and text selection keep working.
 export default function FallingLeaves({ source }: { source: { current: PageRect | null } }) {
  const ref = useRef<HTMLCanvasElement>(null);
+ // The portal needs document.body, so it only mounts in the browser (the page is also prerendered).
+ const [mounted, setMounted] = useState(false);
+ useEffect(() => setMounted(true), []);
  useEffect(() => {
   const canvas = ref.current, context = canvas?.getContext('2d');
   if (!canvas || !context) return;
@@ -84,6 +87,6 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
   resize(); start();
   addEventListener('resize', resize); document.addEventListener('visibilitychange', start); media.addEventListener('change', start);
   return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); document.removeEventListener('visibilitychange', start); media.removeEventListener('change', start); };
- }, [source]);
- return createPortal(<canvas ref={ref} className="falling-leaves" aria-hidden="true" />, document.body);
+ }, [source, mounted]);
+ return mounted && createPortal(<canvas ref={ref} className="falling-leaves" aria-hidden="true" />, document.body);
 }
