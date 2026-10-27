@@ -62,7 +62,14 @@ As fichas iniciais inalteradas têm links `/?exemplar=db-001`. Cadastros criados
 
 ## Vercel
 
-O arquivo `vercel.json` configura Vite, comando `npm run build`, saída `dist` e fallback de SPA. Na importação do repositório na Vercel, use esta pasta como raiz. Não há variáveis de ambiente na versão local. A publicação não foi executada nesta etapa.
+Repositório: `git@github.com:Alisson-San/bonsai_daniel.git` (branch `main`).
+
+1. Em [vercel.com/new](https://vercel.com/new), importe o repositório `Alisson-San/bonsai_daniel`.
+2. A Vercel detecta tudo pelo `vercel.json`: framework Vite, `npm run build`, saída `dist`, fallback de SPA (links como `/#DB-001` e `/?exemplar=db-001` funcionam). Mantenha a raiz do projeto como diretório raiz. Não há variáveis de ambiente.
+3. Node: o `package.json` exige Node 22.12+; a Vercel usa a versão 22.x automaticamente.
+4. Cada `git push` na `main` gera um novo deploy de produção; outras branches geram prévias.
+
+O hero 3D carrega o Three.js do jsDelivr no navegador do visitante; não é preciso configurar nada na Vercel. Um modelo real pode ser publicado colocando `public/models/bonsai.glb` no repositório.
 
 Referência oficial: [Vite na Vercel](https://vercel.com/docs/frameworks/frontend/vite).
 
