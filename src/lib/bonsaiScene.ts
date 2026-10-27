@@ -536,7 +536,8 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
   };
 
   // Image-based light from a studio room for reflections on the stone pot and leaves.
-  import(/* @vite-ignore */ `${ADDONS}environments/RoomEnvironment.js/+esm`).then(({ RoomEnvironment }) => {
+  // The first compile waits for it: adding it later would recompile every lit material on the main thread.
+  const environmentReady = import(/* @vite-ignore */ `${ADDONS}environments/RoomEnvironment.js/+esm`).then(({ RoomEnvironment }) => {
     if (disposed) return;
     const pmrem = new THREE.PMREMGenerator(renderer);
     environment = pmrem.fromScene(new RoomEnvironment(), .04).texture; pmrem.dispose();
@@ -601,7 +602,9 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
     if (reduced || !frame) render(0);
   };
   const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  let compiled = false;
   const render = (dt: number) => {
+    if (!compiled) return;
     elapsed += dt;
     if (entrance < 2) {
       entranceStart ||= performance.now(); entrance = (performance.now() - entranceStart) / 1000;
@@ -626,13 +629,25 @@ export function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { the
     if (dt) { frameAverage = frameAverage * .95 + dt * .05; if (++frameCount > 90 && frameAverage > 1 / 40 && renderer.getPixelRatio() > 1) { renderer.setPixelRatio(Math.max(1, renderer.getPixelRatio() - .25)); resize(); frameCount = 0; } }
     render(dt); frame = requestAnimationFrame(tick);
   };
-  const start = () => { if (!reduced && !frame && visible && !document.hidden) frame = requestAnimationFrame(tick); };
+  const start = () => { if (compiled && !reduced && !frame && visible && !document.hidden) frame = requestAnimationFrame(tick); };
   const move = (event: PointerEvent) => { if (reduced || event.pointerType !== 'mouse') return; pointer.tx = event.clientX / innerWidth * 2 - 1; pointer.ty = -(event.clientY / innerHeight * 2 - 1); };
   const resizeObserver = new ResizeObserver(resize);
   if (canvas.parentElement) { resizeObserver.observe(canvas.parentElement); const stage = canvas.parentElement.querySelector('.hero-stage'); if (stage) resizeObserver.observe(stage); }
   const intersection = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; start(); }); intersection.observe(canvas);
   addEventListener('pointermove', move, { passive: true }); document.addEventListener('visibilitychange', start);
-  resize(); render(0); start();
+  // Shaders compile before the first frame, in parallel where the driver supports KHR_parallel_shader_compile,
+  // for the final and the entrance (transparent) material states, so on phones neither the first frame
+  // nor the end of the entrance blocks the page for seconds.
+  const warm = async () => {
+    await Promise.race([environmentReady, new Promise(resolve => setTimeout(resolve, 4000))]);
+    if (disposed) return;
+    await renderer.compileAsync(scene, camera);
+    if (reduced || disposed) return;
+    for (const material of fading) material.transparent = true;
+    await renderer.compileAsync(scene, camera);
+  };
+  resize();
+  warm().catch(() => {}).then(() => { if (disposed) return; compiled = true; render(0); start(); });
 
   return {
     setTheme(next) {

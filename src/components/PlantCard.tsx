@@ -35,12 +35,12 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
       <div className="vitrine-rig">
        <span className="vitrine-ring" aria-hidden="true" />
        <span className="vitrine-contact" aria-hidden="true" />
-       <button className="vitrine-plant" onClick={open} aria-label={`Ver ficha e fotos reais de ${plant.nomePopular}`}><img src={plant.fotoVitrine} alt={plant.nomePopular} draggable={false} /></button>
+       <button className="vitrine-plant" onClick={open} aria-label={`Ver ficha e fotos reais de ${plant.nomePopular}`}><img src={plant.fotoVitrine} loading="lazy" decoding="async" alt={plant.nomePopular} draggable={false} /></button>
       </div>
      </div>
     : <button className="arch-frame" onClick={open} aria-label={`Ver ficha e fotos reais de ${plant.nomePopular}`}>
-      <img src={cover.url} alt={plant.nomePopular} style={{ objectPosition: `${(plant.framing?.focusX ?? .5) * 100}% 58%` }} draggable={false} />
-      {secondary && <img className="arch-secondary" src={secondary.url} alt="" draggable={false} />}
+      <img src={cover.url} alt={plant.nomePopular} loading="lazy" decoding="async" style={{ objectPosition: `${(plant.framing?.focusX ?? .5) * 100}% 58%` }} draggable={false} />
+      {secondary && <img className="arch-secondary" src={secondary.url} alt="" loading="lazy" decoding="async" draggable={false} />}
      </button>}
    <span className={`status status-${plant.status}`}><i />{statusLabels[plant.status]}</span>
    <span className="tile-code">{plant.codigo}</span>
