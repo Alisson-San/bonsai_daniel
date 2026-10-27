@@ -15,11 +15,14 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
  useEffect(() => {
   let cancelled = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  loadThree().then(THREE => {
+  // The scene starts once the page is idle, so text, catalog and photos come first on slow phones.
+  const begin = () => loadThree().then(THREE => {
    if (cancelled || !ref.current) return;
    scene.current = createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, onFirstFrame: () => status.current('ready'), onCanopy: rect => { canopy.current = rect; } });
   }).catch(() => { if (!cancelled) status.current('failed'); });
-  return () => { cancelled = true; scene.current?.dispose(); scene.current = null; };
+  const idleSupported = typeof requestIdleCallback === 'function';
+  const idle = idleSupported ? requestIdleCallback(begin, { timeout: 1500 }) : window.setTimeout(begin, 300);
+  return () => { cancelled = true; if (idleSupported) cancelIdleCallback(idle); else clearTimeout(idle); scene.current?.dispose(); scene.current = null; };
  }, []);
  useEffect(() => { themeRef.current = theme; scene.current?.setTheme(theme); }, [theme]);
  return <><canvas id="bonsai-3d-hero" ref={ref} aria-hidden="true" /><FallingLeaves source={canopy} /></>;
