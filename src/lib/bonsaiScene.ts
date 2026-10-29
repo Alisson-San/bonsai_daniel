@@ -15,9 +15,10 @@ export function loadThree() {
 export type BonsaiScene = { setTheme: (theme: Theme) => void; dispose: () => void };
 export type PageRect = { x: number; y: number; width: number; height: number };
 // entrance: false starts on the finished composition (it replaces a still of it on phones).
-// onTrace reports each start-up step (shown on the page with ?debug3d); onError reports a failure after the scene
-// was created (shader compile, first frame), so the hero can fall back instead of waiting forever.
-type Options = { theme: Theme; reduced: boolean; entrance?: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void; onTrace?: (step: string) => void; onError?: (error: unknown) => void };
+// onError reports a failure after the scene was created (first frame), so the hero can fall back instead of waiting.
+// gentle: for visitors who prefer reduced motion. The entrance, the light sweep and a softer breeze still play;
+// nothing follows the pointer, the device tilt or the scroll.
+type Options = { theme: Theme; reduced: boolean; gentle?: boolean; entrance?: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void; onError?: (error: unknown) => void };
 
 // Optional real model: drop a .glb here and it replaces the procedural tree and pot on the same stage.
 export const HERO_MODEL_URL = '/models/bonsai.glb';
@@ -508,15 +509,14 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
 }
 
 // Built in steps that yield to the browser in between, so a slow phone keeps scrolling while the scene is made.
-export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, entrance: animateEntrance = true, onFirstFrame, onCanopy, onTrace = () => {}, onError = () => {} }: Options): Promise<BonsaiScene> {
+export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, gentle = false, entrance: animateEntrance = true, onFirstFrame, onCanopy, onError = () => {} }: Options): Promise<BonsaiScene> {
   const pause = () => new Promise<void>(resolve => setTimeout(resolve, 0));
   // A step that may hang on some GPUs or networks gives up after `ms`, so start-up always moves on.
-  // Resolves true when the step finished, false when it gave up.
-  const within = <R,>(work: Promise<R>, ms: number, step: string) => new Promise<boolean>(resolve => {
-    const timer = setTimeout(() => { onTrace(`${step}: sem resposta em ${ms / 1000} s, seguindo`); resolve(false); }, ms);
-    work.then(() => { onTrace(`${step}: ok`); resolve(true); }, error => { onTrace(`${step}: ${error instanceof Error ? error.message : String(error)}`); resolve(false); }).finally(() => clearTimeout(timer));
+  // Resolves true when the step finished, false when it failed or gave up.
+  const within = <R,>(work: Promise<R>, ms: number) => new Promise<boolean>(resolve => {
+    const timer = setTimeout(() => resolve(false), ms);
+    work.then(() => resolve(true), () => resolve(false)).finally(() => clearTimeout(timer));
   });
-  onTrace('criando cena');
   const settled = reduced || !animateEntrance;
   const compact = innerWidth < 760;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -756,18 +756,18 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // Fewer, larger leaves of varied sizes, so single leaves read clearly as in the logo.
   const perOuter = 10, perInner = compact ? 5 : 6;
   const count = clusters.reduce((sum, cluster) => sum + (cluster.inner ? perInner : perOuter), 0);
-  const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 } };
+  const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 }, uBreeze: { value: gentle ? .4 : 1 } };
   const delays = new Float32Array(count);
   const patch = (shader: { uniforms: Record<string, { value: unknown }>; vertexShader: string }) => {
-    shader.uniforms.uTime = motion.uTime; shader.uniforms.uReveal = motion.uReveal;
+    shader.uniforms.uTime = motion.uTime; shader.uniforms.uReveal = motion.uReveal; shader.uniforms.uBreeze = motion.uBreeze;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uReveal;\nattribute float aDelay;')
+      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uReveal;\nuniform float uBreeze;\nattribute float aDelay;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 #ifdef USE_INSTANCING
   vec3 anchor = instanceMatrix[3].xyz;
   transformed *= smoothstep(aDelay, aDelay + .25, uReveal);
-  float flutter = sin(uTime * 1.6 + anchor.x * 2.1 + anchor.z * 1.7) * .07 + sin(uTime * 2.7 + anchor.y * 3.3) * .03;
-  float sway = sin(uTime * .7 + anchor.x * .5) * .22 * clamp(anchor.y - 1.2, 0., 2.);
+  float flutter = (sin(uTime * 1.6 + anchor.x * 2.1 + anchor.z * 1.7) * .07 + sin(uTime * 2.7 + anchor.y * 3.3) * .03) * uBreeze;
+  float sway = sin(uTime * .7 + anchor.x * .5) * .22 * clamp(anchor.y - 1.2, 0., 2.) * uBreeze;
   transformed.x += flutter * transformed.y + sway;
   transformed.z += flutter * .6 * transformed.y + sway * .4;
 #endif`);
@@ -999,13 +999,13 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     render(dt); frame = requestAnimationFrame(tick);
   };
   const start = () => { if (compiled && !reduced && !frame && visible && !document.hidden) frame = requestAnimationFrame(tick); };
-  const move = (event: PointerEvent) => { if (reduced || event.pointerType !== 'mouse') return; pointer.tx = event.clientX / innerWidth * 2 - 1; pointer.ty = -(event.clientY / innerHeight * 2 - 1); };
+  const move = (event: PointerEvent) => { if (reduced || gentle || event.pointerType !== 'mouse') return; pointer.tx = event.clientX / innerWidth * 2 - 1; pointer.ty = -(event.clientY / innerHeight * 2 - 1); };
   const resizeObserver = new ResizeObserver(resize);
   if (canvas.parentElement) { resizeObserver.observe(canvas.parentElement); const stage = canvas.parentElement.querySelector('.hero-stage'); if (stage) resizeObserver.observe(stage); }
   const intersection = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; start(); }); intersection.observe(canvas);
-  const scrolled = () => { scrollTurn = reduced ? 0 : Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight * .9))); };
+  const scrolled = () => { scrollTurn = reduced || gentle ? 0 : Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight * .9))); };
   // Phones tilt the tree with the device where orientation needs no permission (Android); iOS keeps the scroll turn.
-  const tilted = (event: DeviceOrientationEvent) => { if (reduced || event.gamma === null || event.beta === null) return; pointer.tx = Math.max(-1, Math.min(1, event.gamma / 25)); pointer.ty = Math.max(-1, Math.min(1, (event.beta - 50) / 30)); };
+  const tilted = (event: DeviceOrientationEvent) => { if (reduced || gentle || event.gamma === null || event.beta === null) return; pointer.tx = Math.max(-1, Math.min(1, event.gamma / 25)); pointer.ty = Math.max(-1, Math.min(1, (event.beta - 50) / 30)); };
   const orientation = typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches;
   addEventListener('pointermove', move, { passive: true }); addEventListener('scroll', scrolled, { passive: true }); scrolled();
   if (orientation) addEventListener('deviceorientation', tilted);
@@ -1014,21 +1014,20 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // for the final and the entrance (transparent) material states, so on phones neither the first frame
   // nor the end of the entrance blocks the page for seconds.
   const warm = async () => {
-    await within(environmentReady, 4000, 'luz de ambiente');
+    await within(environmentReady, 4000);
     if (disposed) return;
     // compileAsync waits for the driver's parallel compile; it is capped so a driver that never reports completion
     // cannot leave the hero waiting: the first frame then compiles whatever is left.
-    const compiledInTime = await within(renderer.compileAsync(scene, camera), 3000, 'shaders');
+    const compiledInTime = await within(renderer.compileAsync(scene, camera), 3000);
     if (settled || disposed) return;
     for (const material of fading) material.transparent = true;
-    if (compiledInTime) await within(renderer.compileAsync(scene, camera), 3000, 'shaders da entrada');
+    if (compiledInTime) await within(renderer.compileAsync(scene, camera), 3000);
   };
   resize();
-  onTrace('cena montada');
-  warm().catch(error => onTrace(`preparo: ${error instanceof Error ? error.message : String(error)}`)).then(() => {
+  warm().catch(() => {}).then(() => {
     if (disposed) return;
-    try { compiled = true; render(0); onTrace('primeiro quadro desenhado'); start(); }
-    catch (error) { onTrace(`primeiro quadro falhou: ${error instanceof Error ? error.message : String(error)}`); onError(error); }
+    try { compiled = true; render(0); start(); }
+    catch (error) { onError(error); }
   });
 
   return {

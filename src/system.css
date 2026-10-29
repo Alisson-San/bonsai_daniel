@@ -267,3 +267,16 @@
 .access-message{font-size:14px;color:var(--gold);line-height:1.5}
 .access-links{display:flex;flex-wrap:wrap;gap:8px 24px}
 .access-links .text-link{margin:0}
+
+/* ---- Reduced motion (often an OS default): a gentle hero instead of a frozen one. The global rule in styles.css
+   cuts every animation and transition to ~0; these keep the soft fades: ghost to 3D, and the opening texts fading
+   in without moving. ---- */
+@media(prefers-reduced-motion:reduce){
+ .hero-spatial .hero-stage::before{transition-duration:.9s!important}
+ .hero-spatial #bonsai-3d-hero{transition-duration:.6s!important}
+ .hero-spatial .hero-copy>*{animation:intro-fade 1s ease-out backwards!important;animation-duration:1s!important}
+ .hero-spatial .hero-copy>h1{animation-delay:.3s!important}
+ .hero-spatial .hero-copy>.hero-description{animation-delay:.45s!important}
+ .hero-spatial .hero-copy>.button{animation-delay:.6s!important}
+ .hero-spatial .hero-copy>.hero-benefits{animation-delay:.75s!important}
+}

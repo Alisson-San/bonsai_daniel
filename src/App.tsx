@@ -108,14 +108,14 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
     }).catch(() => { if (!cancelled) { setStorageError(true); notify('Não foi possível carregar o catálogo agora. A edição fica desativada até recarregar a página.'); } }).finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; clearTimeout(noticeTimer.current); };
   }, []);
-  // Back from an e-mail link (account confirmation or password reset): the Supabase client reads the session from the
-  // URL, then the sign-in dialog continues (straight into the curation for an admin, or to the new password form).
+  // Back from an e-mail link (invitation or password reset): the Supabase client reads the session from the URL, then
+  // the sign-in dialog asks for the password (invite, recovery) or goes straight into the curation.
   useEffect(() => {
     const hash = location.hash, query = location.search;
-    if (!/access_token|type=recovery/.test(hash) && !/[?&]code=/.test(query)) return;
+    if (!/access_token|type=(recovery|invite)/.test(hash) && !/[?&]code=/.test(query)) return;
     void supabase().then(db => {
       db.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') setAccess('nova-senha'); });
-      setAccess(current => current ?? (/type=recovery/.test(hash) ? 'nova-senha' : 'entrar'));
+      setAccess(current => current ?? (/type=(recovery|invite)/.test(hash) ? 'nova-senha' : 'entrar'));
     });
   }, []);
   // Plant sheet links (site.com/#DB-001) open the modal, also when the hash changes in place.

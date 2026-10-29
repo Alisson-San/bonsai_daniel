@@ -17,11 +17,9 @@ const data = `<script id="catalog-data" type="application/json">${JSON.stringify
 const fill = path => html.replace('<div id="root"></div>', () => `<div id="root">${render(path, catalog)}</div>${data}`);
 
 writeFileSync(page, fill('/'));
-// The biography has its own title and no hero still to preload.
-const biography = fill('/biografia')
-  .replace(/<title>[^<]*<\/title>/, '<title>Biografia — Bonsai Daniel Bourscheid</title>')
-  .replace(/const poster = [^;]*;[^;]*;[^;]*;[^;]*;\s*document\.head\.appendChild\(poster\);/, '');
-if (biography.includes("poster.rel")) throw new Error('Pré-carregamento da imagem do hero não removido da biografia.');
+// The biography has its own title (the inline script in index.html only preloads the hero still on the home page, and
+// stays byte-identical so its hash in the Content-Security-Policy of vercel.json matches both pages).
+const biography = fill('/biografia').replace(/<title>[^<]*<\/title>/, '<title>Biografia — Bonsai Daniel Bourscheid</title>');
 mkdirSync(new URL('../dist/biografia', import.meta.url), { recursive: true });
 writeFileSync(new URL('../dist/biografia/index.html', import.meta.url), biography);
 rmSync(new URL('../.ssr', import.meta.url), { recursive: true, force: true });
