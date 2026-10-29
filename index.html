@@ -20,6 +20,18 @@
     <script>
       try { const saved = localStorage.getItem('bourscheid-theme'); const theme = saved === 'dark' || saved === 'light' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; const poster = document.createElement('link'); poster.rel = 'preload'; poster.as = 'image'; poster.href = '/images/hero-poster-' + theme + (matchMedia('(max-width: 800px)').matches ? '' : '-large') + '.webp'; document.head.appendChild(poster); } catch { document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
     </script>
+    <script>
+      // ?debug3d: a panel that collects errors from the very start, so a script that fails to load or run on a phone
+      // still shows why (the 3D hero adds its own steps to the same panel).
+      if (/[?&]debug3d/.test(location.search)) {
+        const panel = () => document.querySelector('.debug-3d') || document.body && document.body.appendChild(Object.assign(document.createElement('pre'), { className: 'debug-3d', textContent: 'Diagnóstico do 3D\n' + navigator.userAgent }));
+        const add = text => { const p = panel(); if (p) p.textContent += '\n' + (performance.now() / 1000).toFixed(1) + ' s · ' + text; else addEventListener('DOMContentLoaded', () => add(text)); };
+        addEventListener('error', event => add('erro: ' + (event.message || (event.target && (event.target.src || event.target.href)) || 'recurso não carregou')), true);
+        addEventListener('unhandledrejection', event => add('erro: ' + (event.reason && event.reason.message || event.reason)));
+        addEventListener('DOMContentLoaded', () => add('página carregada; WebGL ' + (document.createElement('canvas').getContext('webgl2') ? '2 disponível' : document.createElement('canvas').getContext('webgl') ? '1 disponível' : 'indisponível')));
+        addEventListener('load', () => setTimeout(() => { if (!document.querySelector('.hero-spatial.is-ready, .hero-spatial.is-failed')) add('o app ainda não iniciou o 3D (o JavaScript do site pode não estar rodando)'); }, 4000));
+      }
+    </script>
     <title>Bonsai Daniel Bourscheid</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
