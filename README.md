@@ -159,6 +159,14 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 
 **Modelo real:** um arquivo `public/models/bonsai.glb` válido substitui automaticamente a árvore e o vaso procedurais no mesmo palco (veja `public/models/LEIA-ME.txt`). Sem o arquivo, ou se ele falhar, a árvore procedural continua.
 
+## Apresentação da coleção
+
+- **Até 4 exemplares:** cada um ganha uma faixa larga própria, com a foto grande de um lado e o texto do outro, alternando os lados (no celular, foto em cima). **A partir de 5:** grade de cards.
+- **Card enxuto:** categoria e código, nome, espécie, descrição curta, uma linha de medidas (idade · altura · nebari), preço em destaque e uma ação principal ("Tenho interesse", WhatsApp) com o link "Ver detalhes". Os indicadores de sol, rega e cuidado ficam na ficha (e no card só na curadoria).
+- **Foto:** moldura retangular arredondada, que mostra a copa inteira.
+- **Texto:** corpo de 17 px (15 px no celular), títulos maiores e botões de 50 px de altura (`src/system.css`).
+- **Prévia de link:** `index.html` traz as tags Open Graph com `public/images/og-cover.jpg` (1200×630, o logo 3D), usada pelo WhatsApp, Instagram e Facebook. As URLs apontam para `https://bonsaidaniel.vercel.app/`; atualize se o domínio mudar.
+
 ## Hero 3D na identidade da logo
 
 A cena é montada sobre as medidas da logo oficial (`public/images/logo_escuro.jpeg`, 1586×992 px): 160 px da logo valem uma unidade da cena, com o eixo vertical da logo (coluna 760) no centro e a borda do vaso (linha 567) como referência (`LOGO`, `logoX` e `logoY` em `src/lib/bonsaiScene.ts`). Por isso arco, vaso, placa e copa caem nas mesmas posições da logo em qualquer tela.

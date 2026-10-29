@@ -9,7 +9,8 @@ import WhatsAppIcon from './WhatsAppIcon';
 
 type Props = { plant: Plant; index: number; editing: boolean; onOpen: (source: HTMLElement | null) => void; onEdit: () => void; onDuplicate: () => void; onStatus: () => void; onDelete: () => void; onInterest: () => void; onSaveField: SavePlantField; onSaveIndicator: (key: keyof Levels, value: number) => void };
 
-// With a cut-out showcase photo the plant stands on a stage; otherwise the real photo sits in an arch frame, untouched.
+// With a cut-out showcase photo the plant stands on a stage; otherwise the real photo sits in a rounded frame, untouched.
+// The card shows only what decides a visit: name, a few facts, price and one action. Ratings live in the detail sheet.
 export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDuplicate, onStatus, onDelete, onInterest, onSaveField, onSaveIndicator }: Props) {
  const reduced = useReducedMotion();
  const visual = useRef<HTMLDivElement>(null);
@@ -23,11 +24,11 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
  };
  const center = (event: PointerEvent<HTMLDivElement>) => { event.currentTarget.style.removeProperty('--rx'); event.currentTarget.style.removeProperty('--ry'); };
  const open = () => onOpen(visual.current?.querySelector<HTMLElement>('.vitrine-plant>img, .arch-frame>img') ?? null);
- const pills = [
-  { label: 'Valor', value: formatPrice(plant.preco), tone: 'price' },
-  plant.idadeEstimada && { label: 'Idade', value: plant.idadeEstimada.replace(/^~\s*/, '') },
-  plant.larguraNebariCm !== null && { label: 'Nebari', value: `${plant.larguraNebariCm} cm` },
- ].filter(Boolean) as { label: string; value: string; tone?: string }[];
+ const facts = [
+  plant.idadeEstimada && plant.idadeEstimada.replace(/^~\s*/, ''),
+  plant.alturaCm !== null && `${plant.alturaCm} cm de altura`,
+  plant.larguraNebariCm !== null && `nebari de ${plant.larguraNebariCm} cm`,
+ ].filter(Boolean) as string[];
  return <motion.article layout className={`plant-tile status-${plant.status}`} initial={reduced ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .12 }} transition={{ delay: Math.min(index % 3 * .12, .24), type: 'spring', stiffness: 300, damping: 30 }} exit={{ opacity: 0, scale: .96 }}>
   <div className="tile-visual" ref={visual}>
    {plant.fotoVitrine
@@ -43,18 +44,17 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
       {secondary && <img className="arch-secondary" src={secondary.url} alt="" loading="lazy" decoding="async" draggable={false} />}
      </button>}
    <span className={`status status-${plant.status}`}><i />{statusLabels[plant.status]}</span>
-   <span className="tile-code">{plant.codigo}</span>
    {editing && <div className="card-admin"><button className="icon-button" aria-label={`Editar ${plant.codigo}`} onClick={onEdit}><Pencil size={15} /></button><button className="icon-button" aria-label={`Duplicar ${plant.codigo}`} onClick={onDuplicate}><Copy size={15} /></button><button className="icon-button" aria-label={`Alternar status de ${plant.codigo}`} onClick={onStatus}><RefreshCw size={15} /></button><button className="icon-button danger" aria-label={`Excluir ${plant.codigo}`} onClick={onDelete}><Trash2 size={15} /></button></div>}
   </div>
   <div className="tile-body">
-   <span className="eyebrow">{plant.categoria}</span>
+   <span className="eyebrow"><span>{plant.categoria}</span><span className="tile-code">{plant.codigo}</span></span>
    <h3 className="card-heading"><PlantInline plant={plant} field="nomePopular" editing={editing} onSave={onSaveField} /></h3>
    <p className="scientific"><PlantInline plant={plant} field="especieCientifica" editing={editing} onSave={onSaveField} /></p>
-   <div className="tile-pills">{pills.map(pill => <span key={pill.label} className={`pill ${pill.tone ?? ''}`}><small>{pill.label}</small>{pill.value}</span>)}</div>
-   <Indicators levels={indicatorsOf(plant)} editing={editing} onChange={onSaveIndicator} />
-   {editing && <p className="card-description"><PlantInline plant={plant} field="descricao" editing={editing} onSave={onSaveField} /></p>}
-   {editing && <p className="tile-price-edit"><small>VALOR</small><PlantInline plant={plant} field="preco" editing={editing} onSave={onSaveField} /></p>}
-   <div className="tile-actions"><button className="button button-outline" onClick={open}>Ver a planta real<ArrowUpRight size={17} /></button><button className="button whatsapp-button" disabled={plant.status === 'vendido'} aria-label={`Tenho interesse em ${plant.codigo}, abrir WhatsApp`} onClick={onInterest}><WhatsAppIcon /><span>Tenho interesse</span></button></div>
+   {(plant.descricao || editing) && <p className="card-description"><PlantInline plant={plant} field="descricao" editing={editing} onSave={onSaveField} /></p>}
+   {facts.length > 0 && <p className="tile-facts">{facts.join(' · ')}</p>}
+   {editing && <Indicators levels={indicatorsOf(plant)} editing={editing} onChange={onSaveIndicator} />}
+   <p className="tile-price">{editing ? <PlantInline plant={plant} field="preco" editing={editing} onSave={onSaveField} /> : formatPrice(plant.preco)}</p>
+   <div className="tile-actions"><button className="button whatsapp-button" disabled={plant.status === 'vendido'} aria-label={`Tenho interesse em ${plant.codigo}, abrir WhatsApp`} onClick={onInterest}><WhatsAppIcon /><span>{plant.status === 'vendido' ? 'Exemplar vendido' : 'Tenho interesse'}</span></button><button className="text-link tile-details" onClick={open}>Ver detalhes<ArrowUpRight size={16} /></button></div>
   </div>
  </motion.article>;
 }

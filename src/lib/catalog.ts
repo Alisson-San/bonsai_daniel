@@ -28,7 +28,7 @@ export function contactMessage(plant: Plant, settings: Settings, origin: string)
   const values: Record<string, string> = {
     nome: plant.nomePopular, codigo: plant.codigo, especie: plant.especieCientifica || 'Espécie a confirmar',
     idade: plant.idadeEstimada || 'Idade a confirmar', preco: formatPrice(plant.preco),
-    foto: photo.startsWith('data:') ? 'foto disponível em Compartilhar Ficha c/ Foto' : new URL(photo, origin).href,
+    foto: photo.startsWith('data:') ? 'foto disponível em Compartilhar ficha com foto' : new URL(photo, origin).href,
     link: plantLink(plant, origin),
   };
   // Templates saved before {link} existed still carry the direct link to the plant.

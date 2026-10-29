@@ -1,12 +1,12 @@
 /* Design system: one scale for type, spacing, radii and controls across every section. Loaded last. */
 :root{
  --fs-eyebrow:11px;--ls-eyebrow:3px;
- --fs-body:15px;--lh-body:1.75;--fs-small:13px;
- --fs-h1:clamp(34px,5vw,64px);--fs-h2:clamp(32px,3.6vw,50px);--fs-h3:clamp(24px,2.2vw,30px);
- --section-y:clamp(64px,8vw,112px);--stack:24px;
- --radius:10px;--radius-lg:24px;--control-h:48px;
+ --fs-body:17px;--lh-body:1.7;--fs-small:14px;--fs-lead:clamp(17px,1.35vw,19px);
+ --fs-h1:clamp(38px,5.4vw,72px);--fs-h2:clamp(34px,4.4vw,60px);--fs-h3:clamp(24px,2.2vw,30px);--fs-feature:clamp(32px,3.4vw,50px);
+ --section-y:clamp(72px,9vw,128px);--stack:24px;
+ --radius:12px;--radius-lg:28px;--control-h:50px;
 }
-@media(max-width:580px){:root{--fs-body:14px;--fs-small:12px;--stack:20px;--fs-h1:min(36px,9vw)}}
+@media(max-width:580px){:root{--fs-body:15px;--fs-small:13px;--fs-lead:16px;--stack:20px;--fs-h1:min(38px,9.5vw)}}
 
 /* ---- Type ---- */
 .eyebrow,.tile-body .eyebrow,.section-heading .eyebrow{font-size:var(--fs-eyebrow);letter-spacing:var(--ls-eyebrow);font-weight:600;text-transform:uppercase;line-height:1.6}
@@ -14,16 +14,16 @@
 .section-heading h2,.cultivator-copy h2,.contact h2{font-size:var(--fs-h2);line-height:1.1;letter-spacing:-.5px;margin-top:14px}
 .card-heading,.tile-body .card-heading{font-size:var(--fs-h3);line-height:1.15}
 .hero-description,.section-heading>p,.cultivator-copy>p,.contact>p{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--muted)}
-.hero-spatial .hero-description{max-width:600px;margin:18px auto 28px;white-space:pre-line}
+.hero-spatial .hero-description{max-width:640px;margin:20px auto 32px;white-space:pre-line;font-size:var(--fs-lead)}
 .scientific{font-size:var(--fs-small)}
 .site-header nav{font-size:13px}
 .site-header nav a{color:var(--muted)}
 .site-header nav a:hover{color:var(--gold-bright)}
 
 /* ---- Buttons and controls: one height, one radius, one type size ---- */
-.button{min-height:var(--control-h);padding:0 24px;font-size:13px;font-weight:500;border-radius:var(--radius);gap:12px}
-.hero-copy>.button{min-height:var(--control-h);padding:0 24px;font-size:13px;margin-top:0}
-.tile-actions .button,.diorama-ctas .button{min-height:var(--control-h);font-size:13px;padding:0 18px}
+.button{min-height:var(--control-h);padding:0 26px;font-size:14px;font-weight:500;border-radius:var(--radius);gap:12px}
+.hero-copy>.button{min-height:var(--control-h);padding:0 28px;font-size:14px;margin-top:0}
+.tile-actions .button,.diorama-ctas .button{min-height:var(--control-h);font-size:14px;padding:0 22px}
 .search-box,.filter-toggle,.category-filters>button,.curation-toggle,input,select,textarea{border-radius:var(--radius)}
 .search-box{height:44px}.filter-toggle{height:44px}
 .category-filters>button{font-size:12px;padding:10px 14px}
@@ -35,15 +35,51 @@
 .contact.section-shell{padding-top:var(--section-y);padding-bottom:var(--section-y)}
 .hero.hero-spatial{padding-bottom:var(--section-y)}
 .section-heading{margin-bottom:32px;align-items:flex-end}
-.section-heading>p{max-width:360px;text-align:right}
+.section-heading>p{max-width:380px;text-align:right}
 .catalog-toolbar{padding-top:24px}
-.results-line{font-size:12px;padding:20px 0 28px}
+.results-line{font-size:13px;padding:20px 0 clamp(36px,5vw,64px)}
 
 /* ---- Showcase: grid on the container, aligned with heading and toolbar ---- */
-.plant-grid.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:56px 32px;justify-content:stretch;padding-top:0}
+.plant-grid.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:64px 32px;justify-content:stretch;padding-top:0}
 .tile-grid>*{flex:initial;min-width:0}
-.tile-pills{margin-top:16px}.indicators{margin-top:16px}
-.tile-actions{padding-top:24px}
+.indicators{margin-top:16px}
+
+/* Photo frame: a calm rounded rectangle that keeps the whole crown (the arch used to cut it). */
+.arch-frame,.tile-grid>.add-card{border-radius:var(--radius-lg);aspect-ratio:4/5}
+.arch-frame{box-shadow:0 30px 60px -30px #000c}
+.tile-visual>.status{top:16px;left:16px;bottom:auto}
+.tile-visual>.card-admin{top:16px;right:16px;left:auto}
+.site.is-editing .tile-visual>.status{top:auto;bottom:16px}
+
+/* Card text: category and code, name, species, a line of facts, the price and one action. */
+.tile-body{padding-top:24px}
+.tile-body .eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;color:var(--gold)}
+.tile-body .eyebrow>span{white-space:nowrap}
+.tile-body .tile-code{position:static;padding:0;border:0;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--muted);font-size:inherit;letter-spacing:2px;font-variant-numeric:tabular-nums}
+.tile-body .tile-code::before{content:"·";margin-right:10px;color:var(--line)}
+.tile-body .card-heading{min-height:0;margin:10px 0 6px;display:block}
+.tile-body .card-description{font-size:var(--fs-small);line-height:1.7;margin-top:16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.site.is-editing .tile-body .card-description{display:block;-webkit-line-clamp:none}
+.site:not(.is-editing) .tile-grid:not(.is-showcase) .card-description{display:none}
+.tile-facts{margin-top:14px;font-size:var(--fs-small);color:var(--muted);letter-spacing:.2px}
+.tile-price{margin-top:18px;font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:600;line-height:1.1;color:var(--gold-bright);font-feature-settings:"lnum" 1,"tnum" 1}
+.tile-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px;padding-top:24px}
+.tile-actions .button{flex:0 0 auto}
+.tile-actions .tile-details{margin:0;font-size:14px}
+
+/* Up to four plants: one wide row each, photo and text side by side, alternating sides. */
+.plant-grid.tile-grid.is-showcase{display:flex;flex-direction:column;gap:clamp(72px,9vw,136px)}
+.is-showcase .plant-tile{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,7vw,112px);align-items:center}
+.is-showcase .plant-tile .tile-visual{max-width:560px;width:100%;justify-self:end}
+.is-showcase .plant-tile:nth-of-type(even) .tile-visual{order:2;justify-self:start}
+.is-showcase .tile-body{padding-top:0;max-width:500px}
+.is-showcase .tile-body .card-heading{font-size:var(--fs-feature);line-height:1.06;letter-spacing:-.5px;margin:14px 0 8px}
+.is-showcase .tile-body .scientific{font-size:var(--fs-body)}
+.is-showcase .tile-body .card-description{font-size:var(--fs-body);margin-top:22px;-webkit-line-clamp:4}
+.is-showcase .tile-facts{font-size:15px;margin-top:20px}
+.is-showcase .tile-price{font-size:clamp(32px,3vw,42px);margin-top:26px}
+.is-showcase .tile-actions{padding-top:30px}
+.tile-grid.is-showcase>.add-card{aspect-ratio:auto;min-height:200px;width:100%}
 
 /* ---- Cultivator: same rounded language as the arch frames ---- */
 .cultivator-image>img{border-radius:var(--radius-lg);filter:none}
@@ -60,12 +96,22 @@
  .section-heading{flex-direction:column;align-items:flex-start;gap:12px}
  .section-heading>p{text-align:left;max-width:none}
 }
+@media(max-width:800px){
+ .is-showcase .plant-tile{grid-template-columns:1fr;gap:24px}
+ .is-showcase .plant-tile .tile-visual,.is-showcase .plant-tile:nth-of-type(even) .tile-visual{order:0;justify-self:stretch;max-width:none}
+ .is-showcase .tile-body{max-width:none}
+ .plant-grid.tile-grid.is-showcase{gap:64px}
+}
 @media(max-width:580px){
  .tile-body .card-heading{min-height:0}
  .plant-grid.tile-grid{gap:48px}
+ .tile-actions .button{flex:1 1 auto}
  .cultivator.section-shell{gap:40px}
  .hero-spatial .hero-description{display:block;margin:14px auto 22px}
 }
+
+/* Hero benefits on one line each on wide screens. */
+@media(min-width:801px){.hero-spatial .hero-benefits{max-width:900px;grid-template-columns:repeat(3,auto);justify-content:center;column-gap:40px}.hero-spatial .hero-benefits>div{white-space:nowrap}}
 
 /* Header: equal side columns, so the nav sits on the page centre (same axis as the hero emblem). */
 .site-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
