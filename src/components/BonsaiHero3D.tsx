@@ -15,8 +15,9 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
  useEffect(() => {
   let cancelled = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // A still of the finished scene (hero-poster-*.webp) shows at once on every screen, with leaves already falling
-  // from its crown; the live scene starts on the same composition, without the entrance, and fades in over it.
+  // A still of the finished scene (hero-poster-*.webp) shows at once on every screen as a faint "ghost" of the emblem
+  // (in full with reduced motion), with leaves already falling from its crown; when the live scene is ready it plays
+  // its entrance over it (the arch draws, the pot appears, the leaves come out in a wave) while the ghost fades.
   const stage = ref.current?.parentElement?.querySelector('.hero-stage')?.getBoundingClientRect();
   if (stage) {
    const width = Math.min(stage.width, stage.height * POSTER.aspect), height = width / POSTER.aspect;
@@ -27,7 +28,7 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
   loadThree().catch(() => {});
   const begin = () => loadThree().then(THREE => {
    if (cancelled || !ref.current) return;
-   return createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, entrance: false, onFirstFrame: () => status.current('ready'), onCanopy: rect => { canopy.current = rect; } }).then(created => {
+   return createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, entrance: true, onFirstFrame: () => status.current('ready'), onCanopy: rect => { canopy.current = rect; } }).then(created => {
     if (cancelled) { created.dispose(); return; }
     // The theme may have changed while the scene was being built.
     scene.current = created; created.setTheme(themeRef.current);

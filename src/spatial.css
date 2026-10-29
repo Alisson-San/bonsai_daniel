@@ -165,3 +165,5 @@
 [data-theme="light"] .hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-light.webp')}
 @media(min-width:801px){.hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-dark-large.webp')}[data-theme="light"] .hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-light-large.webp')}}
 .hero-spatial.is-ready .hero-stage::before,.hero-spatial.is-failed .hero-stage::before{opacity:0}
+/* With motion, the still is only a ghost while the 3D loads: the entrance then draws the emblem over it. */
+@media(prefers-reduced-motion:no-preference){.hero-spatial:not(.is-ready):not(.is-failed) .hero-stage::before{opacity:.22;filter:saturate(.5) blur(1.5px)}.hero-spatial .hero-stage::before{transition:opacity .9s ease-out,filter .9s ease-out}}
