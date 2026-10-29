@@ -3,10 +3,11 @@ import { serializeBackup } from './catalog.ts';
 import { upgradeSeed } from '../data/upgrade.ts';
 import { initialCatalog } from '../data/initial.ts';
 
-export interface CatalogRepository { load(): Promise<Catalog>; save(catalog: Catalog): Promise<void> }
+// save may return the catalog as stored (photos moved to storage, for example); otherwise the given one is kept.
+export interface CatalogRepository { load(): Promise<Catalog>; save(catalog: Catalog): Promise<Catalog | void> }
 type StoredCatalog = { revision: number; catalog: Catalog };
 export class StaleCatalogError extends Error {
-  constructor() { super('O catálogo foi alterado em outra aba. Recarregue a página antes de editar novamente para preservar as alterações.'); }
+  constructor() { super('O catálogo foi alterado em outra aba ou aparelho. Recarregue a página antes de editar novamente para preservar as alterações.'); }
 }
 function openDatabase(name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

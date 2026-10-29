@@ -256,3 +256,14 @@
  .is-home .hero-spatial.is-ready #bonsai-3d-hero{opacity:calc(1 - var(--hero-p,0) * .65)}
 }
 @media(max-width:580px){.sold-list{grid-template-columns:1fr 1fr;gap:24px 14px}.sold-item strong{font-size:18px}}
+
+/* ---- Curation sign-in ---- */
+.curation-access{display:flex;flex-direction:column;align-items:stretch;gap:14px;text-align:left}
+.curation-access .round-icon{align-self:flex-start}
+.curation-access h2{margin:0}
+.curation-access label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.curation-access input{min-height:48px;padding:0 14px;font-size:16px}
+.curation-access .button{margin-top:6px}
+.access-message{font-size:14px;color:var(--gold);line-height:1.5}
+.access-links{display:flex;flex-wrap:wrap;gap:8px 24px}
+.access-links .text-link{margin:0}

@@ -5,7 +5,10 @@ import { ArrowUpRight, Camera, Check, Download, Leaf, LockKeyhole, MapPin, Plus,
 import { initialCatalog, newPlant } from './data/initial';
 import { buildWhatsappUrl, duplicatePlant, filterPlants, parseBackup, plantFromHash, serializeBackup, MAX_BACKUP_BYTES } from './lib/catalog';
 import { downloadFile, fileToImage } from './lib/media';
-import { catalogRepository, StaleCatalogError } from './lib/repository';
+import { StaleCatalogError } from './lib/repository';
+import { createRemoteRepository, NotAdminError } from './lib/remoteRepository';
+import { supabase } from './lib/supabase';
+import CurationAccess, { type AccessMode } from './components/CurationAccess';
 import { statuses, type Catalog, type Indicators, type Plant, type Settings } from './lib/schema';
 import Editable from './components/Editable';
 import PlantCard from './components/PlantCard';
@@ -23,13 +26,15 @@ import { useTheme } from './hooks/useTheme';
 import { useScrollReveal } from './hooks/useScrollReveal';
 import type { SavePlantField } from './components/PlantInline';
 
+// The catalog is read from and saved to Supabase (see lib/remoteRepository.ts).
+const catalogRepository = createRemoteRepository();
 type TextSetting = Exclude<keyof Settings, 'fotoCultivador' | 'bioGallery'>;
 type Page = 'home' | 'bio';
 const pageOf = (path: string): Page => path.replace(/\/+$/, '') === '/biografia' ? 'bio' : 'home';
 const titles: Record<Page, string> = { home: 'Bonsai Daniel Bourscheid', bio: 'Biografia — Bonsai Daniel Bourscheid' };
 
 // `path` comes from the server when the page is prerendered; in the browser it is the current URL.
-export default function App({ path: initialPath = '/' }: { path?: string }) {
+export default function App({ path: initialPath = '/', catalog: preloaded }: { path?: string; catalog?: Catalog }) {
   const [page, setPage] = useState<Page>(() => pageOf(initialPath));
   const { theme, toggle, reset, automatic } = useTheme();
   useScrollReveal();
@@ -65,12 +70,13 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
     update(); addEventListener('scroll', schedule, { passive: true }); addEventListener('resize', schedule);
     return () => { cancelAnimationFrame(frame); removeEventListener('scroll', schedule); removeEventListener('resize', schedule); };
   }, [page]);
-  const [catalog, setCatalog] = useState<Catalog>(initialCatalog);
+  const [catalog, setCatalog] = useState<Catalog>(preloaded ?? initialCatalog);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState(false);
   const [stale, setStale] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [curationInfo, setCurationInfo] = useState(false);
+  // Open sign-in dialog for the curation (null: closed).
+  const [access, setAccess] = useState<AccessMode | null>(null);
   const [selected, setSelected] = useState<Plant | null>(null);
   const [editor, setEditor] = useState<Plant | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -99,8 +105,18 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
       if (id) { const found = data.plants.find(p => p.id === id); if (found) setSelected(found); else notify('Este exemplar não foi encontrado neste catálogo.'); }
       const fromHash = plantFromHash(data.plants, location.hash);
       if (fromHash) setSelected(fromHash); else if (/^#[a-z]{1,5}-\w/i.test(location.hash) && !document.getElementById(location.hash.slice(1))) notify('Este exemplar não foi encontrado neste catálogo.');
-    }).catch(() => { if (!cancelled) { setStorageError(true); notify('Não foi possível ler o catálogo local. Seus dados não serão sobrescritos.'); } }).finally(() => { if (!cancelled) setReady(true); });
+    }).catch(() => { if (!cancelled) { setStorageError(true); notify('Não foi possível carregar o catálogo agora. A edição fica desativada até recarregar a página.'); } }).finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; clearTimeout(noticeTimer.current); };
+  }, []);
+  // Back from an e-mail link (account confirmation or password reset): the Supabase client reads the session from the
+  // URL, then the sign-in dialog continues (straight into the curation for an admin, or to the new password form).
+  useEffect(() => {
+    const hash = location.hash, query = location.search;
+    if (!/access_token|type=recovery/.test(hash) && !/[?&]code=/.test(query)) return;
+    void supabase().then(db => {
+      db.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') setAccess('nova-senha'); });
+      setAccess(current => current ?? (/type=recovery/.test(hash) ? 'nova-senha' : 'entrar'));
+    });
   }, []);
   // Plant sheet links (site.com/#DB-001) open the modal, also when the hash changes in place.
   useEffect(() => {
@@ -116,11 +132,11 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
     addEventListener('scroll', onScroll, { passive: true });
     return () => removeEventListener('scroll', onScroll);
   }, []);
-  const commit = async (change: (current: Catalog) => Catalog, message = 'Alterações salvas neste navegador.') => {
+  const commit = async (change: (current: Catalog) => Catalog, message = 'Alterações publicadas.') => {
     if (busy.current || !ready || storageError || stale) { notify(storageError || stale ? 'Recarregue a página para acessar o catálogo salvo antes de editar.' : 'Aguarde o salvamento atual.'); return false; }
     busy.current = true; setSaving(true);
-    try { const next = change(latest.current); await catalogRepository.save(next); latest.current = next; setCatalog(next); notify(message); return true; }
-    catch (error) { if (error instanceof StaleCatalogError) { setStale(true); notify(error.message); } else { notify(error instanceof Error && error.message.includes('80 MB') ? error.message : 'Não foi possível salvar. Verifique o espaço do navegador e os dados informados. Nenhuma alteração foi aplicada.'); } return false; }
+    try { const next = change(latest.current); const saved = await catalogRepository.save(next) ?? next; latest.current = saved; setCatalog(saved); notify(message); return true; }
+    catch (error) { if (error instanceof StaleCatalogError) { setStale(true); notify(error.message); } else if (error instanceof NotAdminError) { setEditing(false); setAccess('entrar'); notify(error.message); } else { notify(error instanceof Error && error.message.includes('80 MB') ? error.message : 'Não foi possível salvar. Verifique a conexão e os dados informados. Nenhuma alteração foi aplicada.'); } return false; }
     finally { busy.current = false; setSaving(false); }
   };
   const openPlant = (plant: Plant, source: HTMLElement | null) => {
@@ -160,7 +176,7 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
     try {
       if (file.size > MAX_BACKUP_BYTES) throw new Error('Limite de backup: 80 MB.');
       const next = parseBackup(await file.text());
-      if (!confirm(`Substituir o catálogo local por ${next.plants.length} exemplar(es) deste backup? Exporte o catálogo atual antes se precisar preservá-lo.`)) return;
+      if (!confirm(`Substituir o catálogo publicado por ${next.plants.length} exemplar(es) deste backup? Exporte o catálogo atual antes se precisar preservá-lo.`)) return;
       if (await commit(() => next, 'Backup importado com sucesso.')) { setCategory(''); setSpecies(''); setStatus(''); setQuery(''); }
     } catch { notify('Backup inválido. Confira a versão, os campos, os códigos e as imagens. O catálogo atual foi preservado.'); }
   };
@@ -179,7 +195,7 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
   const inline = (key: TextSetting, label: string, multiline = false) => <Editable value={s[key]} editing={editing} onSave={value => saveSetting(key, value)} label={label} multiline={multiline} />;
   return <LayoutGroup><div className={`site ${editing ? 'is-editing' : ''} ${page === 'home' ? 'is-home' : ''}`}>
     <a className="skip-link" href="#colecao">Ir para a coleção</a>
-    <header className={`site-header ${headerHidden ? 'is-hidden' : ''}`}><a href={page === 'home' ? '#inicio' : '/'} data-route={page === 'home' ? undefined : true} className="wordmark" aria-label="Bonsai Daniel Bourscheid, início"><Brand /></a><nav aria-label="Navegação principal">{page === 'home' ? <a href="#colecao">A coleção</a> : <a href="/#colecao" data-route>A coleção</a>}<a href="/biografia" data-route aria-current={page === 'bio' ? 'page' : undefined}>Biografia</a>{page === 'home' ? <a href="#contato">Contato <ArrowUpRight size={13} /></a> : <a href="/#contato" data-route>Contato <ArrowUpRight size={13} /></a>}</nav><div className="header-actions"><button className="theme-toggle icon-button" onClick={toggle} aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}>{theme === 'dark' ? <Sun size={20}/> : <Moon size={20}/>}</button>{!automatic && <button className="icon-button theme-auto" onClick={reset} aria-label="Usar tema do sistema" title="Usar tema do sistema"><Monitor size={16}/></button>}<button className={`curation-toggle ${editing ? 'active' : ''}`} aria-label={editing ? 'Sair da curadoria' : 'Abrir curadoria local'} onClick={() => { if (ready && !storageError) setEditing(v=>!v); }} disabled={!ready}><LockKeyhole size={16} /><span>{editing ? 'Em edição' : 'Curadoria'}</span></button></div></header>
+    <header className={`site-header ${headerHidden ? 'is-hidden' : ''}`}><a href={page === 'home' ? '#inicio' : '/'} data-route={page === 'home' ? undefined : true} className="wordmark" aria-label="Bonsai Daniel Bourscheid, início"><Brand /></a><nav aria-label="Navegação principal">{page === 'home' ? <a href="#colecao">A coleção</a> : <a href="/#colecao" data-route>A coleção</a>}<a href="/biografia" data-route aria-current={page === 'bio' ? 'page' : undefined}>Biografia</a>{page === 'home' ? <a href="#contato">Contato <ArrowUpRight size={13} /></a> : <a href="/#contato" data-route>Contato <ArrowUpRight size={13} /></a>}</nav><div className="header-actions"><button className="theme-toggle icon-button" onClick={toggle} aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}>{theme === 'dark' ? <Sun size={20}/> : <Moon size={20}/>}</button>{!automatic && <button className="icon-button theme-auto" onClick={reset} aria-label="Usar tema do sistema" title="Usar tema do sistema"><Monitor size={16}/></button>}<button className={`curation-toggle ${editing ? 'active' : ''}`} aria-label={editing ? 'Sair da curadoria' : 'Abrir curadoria local'} onClick={() => { if (editing) setEditing(false); else if (ready && !storageError) setAccess('entrar'); }} disabled={!ready}><LockKeyhole size={16} /><span>{editing ? 'Em edição' : 'Curadoria'}</span></button></div></header>
     {page === 'home' ? <main><section className={`hero hero-spatial is-${spatial} section-shell`} id="inicio">{spatial !== 'failed' && <BonsaiHero3D theme={theme} onStatus={setSpatial} />}<div className="hero-stage">{spatial === 'failed' && <><AcerCanvas /><div className="hero-fallback-brand"><Brand hero /></div></>}</div>
       <div className="hero-copy"><div className="eyebrow hero-eyebrow"><span />{inline('heroEyebrow', 'chamada do hero')}</div><h1>{inline('heroTitle', 'título do hero', true)}</h1><p className="hero-description">{inline('heroDescription', 'descrição do hero', true)}</p><a className="button button-gold" href="#colecao">Ver a coleção <ArrowUpRight size={18} /></a><HeroBenefits /></div>
 
@@ -198,11 +214,11 @@ export default function App({ path: initialPath = '/' }: { path?: string }) {
     <section className="cultivator section-shell" id="cultivador"><div className="cultivator-image"><img src={s.fotoCultivador ?? '/images/bonsai_01.jpeg'} alt="Daniel Bourscheid e seu trabalho de cultivo" loading="lazy" />{editing && <div className="cultivator-edit"><button className="button button-outline" onClick={() => cultivatorInput.current?.click()} disabled={saving}><Camera size={16} />Trocar foto do cultivador</button>{s.fotoCultivador && <button className="text-link" onClick={() => void commit(c => { const { fotoCultivador: _removed, ...settings } = c.settings; return { ...c, settings }; }, 'Foto do cultivador restaurada.')}>Restaurar padrão</button>}<input ref={cultivatorInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (file) void replaceCultivatorPhoto(file); e.target.value = ''; }} /></div>}</div><div className="cultivator-copy"><span className="eyebrow">O CULTIVADOR</span><h2>{inline('bioTitle', 'título da bio', true)}</h2>{(s.bio || editing) && <p>{inline('bio', 'bio do cultivador', true)}</p>}<div className="signature">Daniel Bourscheid</div><a className="button button-outline" href="/biografia" data-route>Conheça a história <ArrowUpRight size={18} /></a></div></section>
     <Testimonials text={s.testimonials} editing={editing} inline={inline} />
     <section className="contact section-shell" id="contato"><span className="eyebrow">UMA CONVERSA, UM COMEÇO</span><h2>Sua próxima história<br />pode criar raízes aqui.</h2><p>Escolha um exemplar e converse sobre as possibilidades.</p><a className="button button-gold" href="#colecao">Ver a coleção <ArrowUpRight size={18} /></a><div className="contact-details">{(s.location || editing) && <div><MapPin size={16} />{inline('location', 'localização')}</div>}{(s.instagram || editing) && <div><Instagram size={16} />{editing ? inline('instagram', 'Instagram') : <a href={`https://www.instagram.com/${encodeURIComponent(s.instagram.replace(/^@/, ''))}/`} target="_blank" rel="noreferrer">@{s.instagram.replace(/^@/, '')}</a>}</div>}{editing && <div><Settings2 size={16} /><button className="text-link" onClick={() => setSettingsOpen(true)}>Configurar WhatsApp e mensagem</button></div>}</div></section>
-    </main> : <Biography settings={s} editing={editing} saving={saving} inline={(key, label, multiline) => inline(key, label, multiline)} onAddPhoto={addBioPhoto} onRemovePhoto={id => void commit(c => ({ ...c, settings: { ...c.settings, bioGallery: c.settings.bioGallery.filter(photo => photo.id !== id) } }), 'Foto removida.')} onCaption={(id, legenda) => commit(c => ({ ...c, settings: { ...c.settings, bioGallery: c.settings.bioGallery.map(photo => photo.id === id ? { ...photo, legenda } : photo) } }))} />}<footer className="site-footer"><a href="#inicio" className="wordmark"><Brand /></a><span>© {new Date().getFullYear()} · Cultivando histórias.</span><button className="icon-button" aria-label="Abrir curadoria local" onClick={() => setCurationInfo(true)} disabled={!ready}><LockKeyhole size={15} /></button></footer>
-    {(storageError || stale) && <div className="storage-warning" role="alert">{stale ? 'Outra aba atualizou o catálogo. Recarregue esta página antes de editar novamente.' : 'Armazenamento local indisponível. Exibindo o acervo inicial; edição desabilitada.'}</div>}
-    <AnimatePresence>{editing && <motion.aside className="admin-dock" aria-label="Barra de curadoria" initial={{ y: 90 }} animate={{ y: 0 }} exit={{ y: 90 }}><div className="dock-status"><span className="editing-dot" /><strong>Modo Edição Ativo</strong><small>{saving ? 'Salvando…' : 'Edição local'}</small></div><div className="dock-actions"><button aria-label="Novo Bonsai" onClick={() => setEditor(newPlant())} disabled={saving}><Plus size={18}/><span>Novo Bonsai</span></button><button title="Configurações de contato" aria-label="Configurações de contato" onClick={() => setSettingsOpen(true)} disabled={saving}><Settings2 size={18} /><span>WhatsApp/Contatos</span></button><button aria-label="Exportar Backup JSON" onClick={exportCatalog} disabled={saving}><Download size={18} /><span>Exportar Backup JSON</span></button><button aria-label="Importar JSON" onClick={() => importInput.current?.click()} disabled={saving}><Upload size={18} /><span>Importar JSON</span></button><button onClick={() => setEditing(false)} aria-label="Sair da edição"><LogOut size={18} /><span>Sair</span></button></div></motion.aside>}</AnimatePresence>
+    </main> : <Biography settings={s} editing={editing} saving={saving} inline={(key, label, multiline) => inline(key, label, multiline)} onAddPhoto={addBioPhoto} onRemovePhoto={id => void commit(c => ({ ...c, settings: { ...c.settings, bioGallery: c.settings.bioGallery.filter(photo => photo.id !== id) } }), 'Foto removida.')} onCaption={(id, legenda) => commit(c => ({ ...c, settings: { ...c.settings, bioGallery: c.settings.bioGallery.map(photo => photo.id === id ? { ...photo, legenda } : photo) } }))} />}<footer className="site-footer"><a href="#inicio" className="wordmark"><Brand /></a><span>© {new Date().getFullYear()} · Cultivando histórias.</span><button className="icon-button" aria-label="Abrir curadoria local" onClick={() => setAccess('entrar')} disabled={!ready}><LockKeyhole size={15} /></button></footer>
+    {(storageError || stale) && <div className="storage-warning" role="alert">{stale ? 'O catálogo foi atualizado em outra aba ou aparelho. Recarregue esta página antes de editar novamente.' : 'Catálogo indisponível no momento. Exibindo o acervo inicial; edição desabilitada.'}</div>}
+    <AnimatePresence>{editing && <motion.aside className="admin-dock" aria-label="Barra de curadoria" initial={{ y: 90 }} animate={{ y: 0 }} exit={{ y: 90 }}><div className="dock-status"><span className="editing-dot" /><strong>Modo Edição Ativo</strong><small>{saving ? 'Salvando…' : 'Publicado ao salvar'}</small></div><div className="dock-actions"><button aria-label="Novo Bonsai" onClick={() => setEditor(newPlant())} disabled={saving}><Plus size={18}/><span>Novo Bonsai</span></button><button title="Configurações de contato" aria-label="Configurações de contato" onClick={() => setSettingsOpen(true)} disabled={saving}><Settings2 size={18} /><span>WhatsApp/Contatos</span></button><button aria-label="Exportar Backup JSON" onClick={exportCatalog} disabled={saving}><Download size={18} /><span>Exportar Backup JSON</span></button><button aria-label="Importar JSON" onClick={() => importInput.current?.click()} disabled={saving}><Upload size={18} /><span>Importar JSON</span></button><button onClick={() => setEditing(false)} aria-label="Sair da edição"><LogOut size={18} /><span>Sair</span></button></div></motion.aside>}</AnimatePresence>
     <input ref={importInput} type="file" accept="application/json,.json" hidden onChange={e => { const file = e.target.files?.[0]; if (file) void importCatalog(file); e.target.value = ''; }} />
-    <AnimatePresence>{detailPlant && <PlantDetail key={detailPlant.id} plant={detailPlant} editing={editing} instant={instantDetail} onSaveField={saveField} onSaveIndicator={(key, value) => void saveIndicator(detailPlant.id, key, value)} onEditGallery={() => { setEditor(detailPlant);setSelected(null); }} onClose={closeDetail} onInterest={() => interest(detailPlant)} notify={notify} />}{editor && <PlantEditor key={editor.id} plant={editor} catalog={catalog} onClose={() => setEditor(null)} onSave={savePlant} />}{settingsOpen && <SettingsEditor settings={s} onClose={() => setSettingsOpen(false)} onSave={settings => commit(c => ({ ...c, settings }))} />}{curationInfo && <Modal title="Curadoria local" onClose={() => setCurationInfo(false)}><div className="curation-intro"><span className="round-icon"><LockKeyhole size={25} /></span><span className="eyebrow">SEU ESPAÇO DE CULTIVO</span><h2>A coleção,<br />do seu jeito.</h2><p>Edite textos, cadastre exemplares e organize as fotos diretamente na página.</p><div className="local-notice"><strong>Nesta versão, a curadoria é local.</strong><p>As alterações ficam somente neste navegador. Elas não são publicadas para outros visitantes. Exporte um backup para preservar ou transferir seu catálogo. Este acesso não é um login protegido.</p></div><button className="button button-gold full" disabled={storageError || !ready} onClick={() => { setCurationInfo(false); setEditing(true); }}>Ativar edição visual <ArrowUpRight size={18} /></button></div></Modal>}</AnimatePresence>
+    <AnimatePresence>{detailPlant && <PlantDetail key={detailPlant.id} plant={detailPlant} editing={editing} instant={instantDetail} onSaveField={saveField} onSaveIndicator={(key, value) => void saveIndicator(detailPlant.id, key, value)} onEditGallery={() => { setEditor(detailPlant);setSelected(null); }} onClose={closeDetail} onInterest={() => interest(detailPlant)} notify={notify} />}{editor && <PlantEditor key={editor.id} plant={editor} catalog={catalog} onClose={() => setEditor(null)} onSave={savePlant} />}{settingsOpen && <SettingsEditor settings={s} onClose={() => setSettingsOpen(false)} onSave={settings => commit(c => ({ ...c, settings }))} />}{access && <CurationAccess mode={access} onClose={() => setAccess(null)} onEnter={() => { setAccess(null); if (ready && !storageError) setEditing(true); }} notify={notify} />}</AnimatePresence>
     <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Check size={17} /><span>{toast}</span><button className="icon-button" aria-label="Fechar aviso" onClick={() => setToast('')}><X size={16} /></button></motion.div>}</AnimatePresence>
   </div></LayoutGroup>;
 }

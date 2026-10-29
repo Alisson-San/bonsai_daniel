@@ -52,7 +52,7 @@ O template aceita `{nome}`, `{codigo}`, `{especie}`, `{idade}`, `{preco}` e `{fo
 
 ## Persistência e publicação
 
-**Esta versão salva as edições somente no navegador utilizado.** Publicar o app na Vercel disponibiliza o acervo inicial de `src/data/initial.ts` e as imagens de `public/images/`. Alterações feitas pela curadoria não atualizam o site para outros visitantes. O cadeado abre o modo de edição local; não implementa autenticação de servidor.
+**As edições da curadoria são salvas no banco de dados (ver "Banco de dados") e aparecem para todos os visitantes.** Enquanto ninguém salvar pela curadoria, o site mostra o acervo inicial de `src/data/initial.ts`. O cadeado pede login (e-mail e senha) de uma conta autorizada.
 
 Exporte backups para preservar os cadastros antes de limpar dados do navegador. Imagens locais via upload ficam no JSON. Imagens por URL continuam sendo referências externas. Há limite de 8 MB por upload, 24 fotos por exemplar e 80 MB de JSON para o catálogo inteiro. Um catálogo que exceda o limite não é salvo, preservando a possibilidade de restauração.
 
@@ -177,6 +177,19 @@ Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo bot
 - **Galeria:** fotos enviadas na Curadoria, com legenda editável.
 
 A navegação entre a página inicial e a biografia é feita no próprio app (com transição de página onde o navegador suporta) e o botão voltar funciona. O build pré-renderiza as duas páginas (`dist/index.html` e `dist/biografia/index.html`, ver `vercel.json`), e o app hidrata o HTML pronto em vez de recriá-lo.
+
+## Banco de dados (Supabase)
+
+O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região São Paulo). Qualquer visitante lê; só a curadoria grava.
+
+- **Tabela `catalog`:** uma linha (`id = 'current'`) com o catálogo inteiro em `data` (JSON validado pelo mesmo `catalogSchema`) e um número de `revision`. Cada gravação só vale sobre a revisão de onde partiu, então duas pessoas (ou abas) nunca se sobrescrevem sem aviso.
+- **Tabela `admins`:** e-mails que podem editar (hoje `alirod.santos@gmail.com`). Fechada para a API; para incluir alguém, rode no SQL Editor: `insert into public.admins (email) values ('email@exemplo.com');`
+- **Bucket `fotos`:** fotos enviadas na curadoria vão para o Storage na hora de salvar; o catálogo guarda só as URLs públicas.
+- **Regras (RLS):** leitura pública; inserir e alterar o catálogo e as fotos só para usuário logado com e-mail confirmado e listado em `admins` (`public.is_admin()`).
+- **Login:** o cadeado abre "Entrar na curadoria" (e-mail e senha). No primeiro acesso, use "Primeiro acesso" para criar a senha e confirme pelo link enviado por e-mail; "Esqueci a senha" manda um link de troca.
+- **Código:** `src/lib/supabase.ts` (configuração; a chave publicável pode ficar no navegador, e as variáveis `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` a substituem), `src/lib/remoteRepository.ts` (leitura, gravação e envio de fotos), `src/components/CurationAccess.tsx` (login). A biblioteca do Supabase só carrega quando a curadoria é aberta; visitantes leem o catálogo por uma chamada simples.
+- **Build:** a pré-renderização busca o catálogo publicado e o embute na página, então o HTML já chega com os exemplares reais. Mudanças feitas depois aparecem para o visitante assim que a página carrega.
+- **Configuração no painel do Supabase (Authentication → URL Configuration):** defina *Site URL* como `https://bonsaidaniel.vercel.app` e inclua essa URL em *Redirect URLs*, para os links de confirmação e de troca de senha voltarem ao site.
 
 ## Seções da página inicial
 

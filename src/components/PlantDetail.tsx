@@ -19,7 +19,7 @@ export default function PlantDetail({ plant, onClose, onInterest, notify, editin
   const selected = photos.find(i => i.id === imageId) ?? photos[0];
   const scale = photos.find(i => i.anguloTag === 'Escala Real (Comparação Humana)');
   const publicUrl = plantLink(plant, location.origin);
-  const published = publicPlantLink(plant, location.origin);
+  const published = publicPlantLink(plant, location.origin, true);
   const shareText = `${plant.nomePopular} · ${plant.codigo} · ${formatPrice(plant.preco)}`;
   useEffect(() => { let cancelled = false; preparePhoto(plant).then(file => { if (!cancelled) setPhoto(file); }).catch(() => {}); return () => { cancelled = true; }; }, [plant]);
   const share = async () => {
@@ -46,7 +46,7 @@ export default function PlantDetail({ plant, onClose, onInterest, notify, editin
       <div className="detail-price"><small>VALOR</small><strong><PlantInline plant={plant} field="preco" editing={editing} onSave={onSaveField}/></strong></div>
       <button className="button button-gold full" onClick={onInterest} disabled={plant.status === 'vendido'}>{plant.status === 'vendido' ? 'Exemplar vendido' : 'Tenho interesse neste exemplar'}<WhatsAppIcon size={19} /></button>
       <button className="button button-outline full" onClick={() => void share()}><Share2 size={17} />Compartilhar ficha com foto</button>
-      {!published && <p className="small muted">Cadastro local: compartilhe a foto e os dados. Ainda não há uma ficha pública deste exemplar.</p>}
+      {!published && <p className="small muted">Fotos ainda não publicadas: compartilhe a foto e os dados.</p>}
       {fallback && <div className="share-fallback"><p>Se o dispositivo não enviar arquivos, copie os dados e baixe a foto separadamente.</p>{photo && <button className="text-link" onClick={() => downloadFile(photo, photo.name)}><Download size={16} />Baixar foto</button>}<input aria-label="Dados para compartilhar" readOnly value={publicUrl ? `${shareText} ${publicUrl}` : shareText} onFocus={e => e.target.select()} /></div>}
       <div className="detail-authenticity"><p className="detail-note">Uma árvore única.<br/>Uma nova história para cultivar.</p></div>
     </div></div>
