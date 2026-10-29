@@ -52,7 +52,7 @@ O template aceita `{nome}`, `{codigo}`, `{especie}`, `{idade}`, `{preco}` e `{fo
 
 ## Persistência e publicação
 
-**Esta versão salva as edições somente no navegador utilizado.** Publicar o app na Vercel disponibiliza o acervo inicial de `src/data/initial.ts` e as imagens de `public/images/`. Alterações feitas pela curadoria não atualizam o site para outros visitantes. O cadeado abre o modo de edição local; não implementa autenticação de servidor.
+**As edições da curadoria são salvas no banco de dados (ver "Banco de dados") e aparecem para todos os visitantes.** Enquanto ninguém salvar pela curadoria, o site mostra o acervo inicial de `src/data/initial.ts`. O cadeado pede login (e-mail e senha) de uma conta autorizada.
 
 Exporte backups para preservar os cadastros antes de limpar dados do navegador. Imagens locais via upload ficam no JSON. Imagens por URL continuam sendo referências externas. Há limite de 8 MB por upload, 24 fotos por exemplar e 80 MB de JSON para o catálogo inteiro. Um catálogo que exceda o limite não é salvo, preservando a possibilidade de restauração.
 
@@ -158,6 +158,54 @@ Verificado em Chromium headless (WebGL por SwiftShader), em 1440×900 e 390×844
 A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três ordens de galhos, milhares de folhas texturizadas (serrilhado, nervuras, leve concavidade e brilho translúcido nas bordas) com sombras recortadas, vaso esmaltado com verniz flutuando sem pedestal (só uma sombra de contato suave), substrato de cascalho com musgo, pontas dos galhos que se abrem em raminhos finos com tufos de folhas e iluminação de ambiente (RoomEnvironment). Todas as texturas são geradas no navegador; não há arquivos de imagem extras. O Three.js passou a ser carregado pelo endpoint `+esm` do jsDelivr, o mesmo usado pelos módulos extras, garantindo uma só instância.
 
 **Modelo real:** um arquivo `public/models/bonsai.glb` válido substitui automaticamente a árvore e o vaso procedurais no mesmo palco (veja `public/models/LEIA-ME.txt`). Sem o arquivo, ou se ele falhar, a árvore procedural continua.
+
+## Apresentação da coleção
+
+- **Até 4 exemplares:** cada um ganha uma faixa larga própria, com a foto grande de um lado e o texto do outro, alternando os lados (no celular, foto em cima). **A partir de 5:** grade de cards.
+- **Card enxuto:** categoria e código, nome, espécie, descrição curta, uma linha de medidas (idade · altura · nebari), preço em destaque e uma ação principal ("Tenho interesse", WhatsApp) com o link "Ver detalhes". Os indicadores de sol, rega e cuidado ficam na ficha (e no card só na curadoria).
+- **Foto:** moldura retangular arredondada, que mostra a copa inteira.
+- **Texto:** corpo de 17 px (15 px no celular), títulos maiores e botões de 50 px de altura (`src/system.css`).
+- **Prévia de link:** `index.html` traz as tags Open Graph com `public/images/og-cover.jpg` (1200×630, o logo 3D), usada pelo WhatsApp, Instagram e Facebook. As URLs apontam para `https://bonsaidaniel.vercel.app/`; atualize se o domínio mudar.
+
+## Biografia (`/biografia`)
+
+Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo botão "Conheça a história" na seção O Cultivador e pelo menu. Tem retrato e apresentação, destaques, a história, a trajetória (marcos), uma galeria de eventos, exposições e prêmios e uma chamada para a coleção. Tudo é editado na própria página pelo modo Curadoria; blocos vazios ficam ocultos para os visitantes.
+
+- **Destaques:** um por linha, `título | detalhe`.
+- **História:** parágrafos separados por uma linha em branco; o primeiro aparece em destaque.
+- **Trajetória:** um marco por linha, `ano | título | texto`.
+- **Galeria:** fotos enviadas na Curadoria, com legenda editável.
+
+A navegação entre a página inicial e a biografia é feita no próprio app (com transição de página onde o navegador suporta) e o botão voltar funciona. O build pré-renderiza as duas páginas (`dist/index.html` e `dist/biografia/index.html`, ver `vercel.json`), e o app hidrata o HTML pronto em vez de recriá-lo.
+
+## Banco de dados (Supabase)
+
+O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região São Paulo). Qualquer visitante lê; só a curadoria grava.
+
+- **Tabela `catalog`:** uma linha (`id = 'current'`) com o catálogo inteiro em `data` (JSON validado pelo mesmo `catalogSchema`) e um número de `revision`. Cada gravação só vale sobre a revisão de onde partiu, então duas pessoas (ou abas) nunca se sobrescrevem sem aviso.
+- **Tabela `admins`:** e-mails que podem editar (hoje `alirod.santos@gmail.com`). Fechada para a API; para incluir alguém, rode no SQL Editor: `insert into public.admins (email) values ('email@exemplo.com');`
+- **Bucket `fotos`:** fotos enviadas na curadoria vão para o Storage na hora de salvar; o catálogo guarda só as URLs públicas.
+- **Regras (RLS):** leitura pública; inserir e alterar o catálogo e as fotos só para usuário logado com e-mail confirmado e listado em `admins` (`public.is_admin()`).
+- **Login:** o cadeado abre "Entrar na curadoria" (e-mail e senha). No primeiro acesso, use "Primeiro acesso" para criar a senha e confirme pelo link enviado por e-mail; "Esqueci a senha" manda um link de troca.
+- **Código:** `src/lib/supabase.ts` (configuração; a chave publicável pode ficar no navegador, e as variáveis `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` a substituem), `src/lib/remoteRepository.ts` (leitura, gravação e envio de fotos), `src/components/CurationAccess.tsx` (login). A biblioteca do Supabase só carrega quando a curadoria é aberta; visitantes leem o catálogo por uma chamada simples.
+- **Build:** a pré-renderização busca o catálogo publicado e o embute na página, então o HTML já chega com os exemplares reais. Mudanças feitas depois aparecem para o visitante assim que a página carrega.
+- **Configuração no painel do Supabase (Authentication → URL Configuration):** defina *Site URL* como `https://bonsaidaniel.vercel.app` e inclua essa URL em *Redirect URLs*, para os links de confirmação e de troca de senha voltarem ao site.
+
+## Seções da página inicial
+
+- **Vendidos:** exemplares marcados como "Vendido" saem da coleção e aparecem em "Já encontraram um novo lar", com foto em tons apagados e acesso à ficha. Na curadoria e no filtro "Vendido" eles continuam na coleção, para edição.
+- **Como funciona:** passos da compra, editáveis na curadoria (um por linha, `título | texto`).
+- **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (um por linha, `depoimento | nome | cidade`).
+- **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema recua e esmaece e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
+
+## Abertura e 3D
+
+- **Entrada:** o emblema entra em foco, depois título, texto, botão e benefícios sobem em sequência (`src/system.css`, desativado com movimento reduzido).
+- **Brilho dourado:** logo que a cena aparece e depois a cada 9 s, uma luz percorre o arco e passa pelos filetes e letras douradas da placa.
+- **Rolagem:** ao rolar para fora do topo, a árvore gira até 24° dentro do vaso, mostrando que é 3D; o vaso fica parado como base da placa.
+- **Celular:** em aparelhos Android, inclinar o telefone inclina a árvore (giroscópio); no iPhone fica o giro pela rolagem.
+- **Coleção:** cada foto abre de uma janela menor e assenta de um leve zoom ao entrar na tela.
+- **Ficha:** mais larga, foto fixa enquanto o texto rola e tipografia maior; o comparador de porte com a garrafa saiu (a foto com a mão já mostra a escala).
 
 ## Hero 3D na identidade da logo
 

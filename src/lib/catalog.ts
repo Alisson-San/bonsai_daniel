@@ -1,7 +1,9 @@
 import { catalogSchema, type Plant, type Settings, type Catalog, type Indicators } from './schema.ts';
 import { initialCatalog } from '../data/initial.ts';
 
-export function publicPlantLink(plant: Plant, origin: string): string | null {
+// Online catalogs publish every saved plant; a local catalog only the seed plants it still holds unchanged.
+export function publicPlantLink(plant: Plant, origin: string, online = false): string | null {
+  if (online) return plant.galeria.some(image => image.url.startsWith('data:')) ? null : `${origin}/?exemplar=${encodeURIComponent(plant.id)}`;
   const published = initialCatalog.plants.find(p => p.id === plant.id);
   if (!published || JSON.stringify(published) !== JSON.stringify(plant)) return null;
   return `${origin}/?exemplar=${encodeURIComponent(plant.id)}`;
@@ -28,7 +30,7 @@ export function contactMessage(plant: Plant, settings: Settings, origin: string)
   const values: Record<string, string> = {
     nome: plant.nomePopular, codigo: plant.codigo, especie: plant.especieCientifica || 'Espécie a confirmar',
     idade: plant.idadeEstimada || 'Idade a confirmar', preco: formatPrice(plant.preco),
-    foto: photo.startsWith('data:') ? 'foto disponível em Compartilhar Ficha c/ Foto' : new URL(photo, origin).href,
+    foto: photo.startsWith('data:') ? 'foto disponível em Compartilhar ficha com foto' : new URL(photo, origin).href,
     link: plantLink(plant, origin),
   };
   // Templates saved before {link} existed still carry the direct link to the plant.
