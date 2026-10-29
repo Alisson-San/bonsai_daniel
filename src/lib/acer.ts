@@ -2,23 +2,32 @@
 export const acerOutline = 'M0 29 C1 22 2 14 1 9 L-4 12 -7 11 -12 15 -12 11 -19 13 -17 9 -27 10 -23 5 -30 3 -24 0 -29 -5 -21 -4 -23 -10 -16 -7 -17 -18 -12 -15 -12 -22 -8 -16 -7 -9 -5 -15 -7 -21 -4 -20 -3 -28 0 -35 3 -28 4 -20 7 -21 5 -15 7 -9 8 -16 12 -22 12 -15 17 -18 16 -7 23 -10 21 -4 29 -5 24 0 30 3 23 5 27 10 17 9 19 13 12 11 12 15 7 11 4 12 2 9 C4 17 3 23 2 29 Z';
 export const acerVeins = 'M1 11 L0 -29 M0 8 L-12 -17 M0 8 L12 -17 M0 8 L-23 -3 M0 8 L23 -3 M0 8 L-21 9 M0 8 L21 9 M0 -13 L-4 -19 M0 -13 L4 -19 M-8 -8 L-15 -10 M8 -8 L15 -10 M-12 3 L-19 0 M12 3 L19 0';
 
-// Palmate Japanese-maple leaf as in the logo: seven pointed lobes forming a full star, lightly serrated.
-// Centred on the palm at (x, y); `size` is the length of the central lobe; `width` is each lobe's half-width at its
-// base (radians): .3 gives broad lobes, about .19 the slender ones of the logo's crown.
-export function palmateLeaf(x: number, y: number, size: number, width = .3) {
-  const lobes = [-128, -86, -43, 0, 43, 86, 128].map((deg, i) => ({ a: deg * Math.PI / 180, length: [.56, .82, .95, 1, .95, .82, .56][i] }));
-  const at = (a: number, r: number) => [x + Math.sin(a) * r * size, y - Math.cos(a) * r * size] as const;
-  const path = new Path2D();
-  path.moveTo(...at(-Math.PI * .88, .2));
-  lobes.forEach((lobe, i) => {
-    // Wide at the base, tapering to a sharp tip, with small serrations along both edges.
-    for (let k = 0; k <= 5; k++) { const f = k / 5; path.lineTo(...at(lobe.a - width * Math.pow(1 - f, .85) - (k % 2 ? .015 : 0), .36 + (lobe.length - .36) * f)); }
-    for (let k = 4; k >= 0; k--) { const f = k / 5; path.lineTo(...at(lobe.a + width * Math.pow(1 - f, .85) + (k % 2 ? .015 : 0), .36 + (lobe.length - .36) * f)); }
-    const next = lobes[i + 1];
-    path.lineTo(...at(next ? (lobe.a + next.a) / 2 : Math.PI * .88, next ? .4 : .2));
+// Japanese-maple leaf as in the logo: seven lanceolate lobes (narrow where they leave the centre, widest about 40%
+// along, then a long sharp tip) separated by deep cuts, with fine serration. Centred on the palm at (x, y); `size`
+// is the length of the central lobe; `width` scales each lobe's half-width (the default matches the logo).
+// Returns the outline, each lobe's tip (for the veins) and the lobes as separate paths (for per-lobe shading).
+export function palmateLeaf(x: number, y: number, size: number, width = 1.4) {
+  const lobes = [-130, -87, -43, 0, 43, 87, 130].map((deg, i) => ({ a: deg * Math.PI / 180, length: [.55, .82, .95, 1, .95, .82, .55][i] }));
+  const hub = .1, steps = 14, peak = .85 / (.85 + 1.25), top = peak ** .85 * (1 - peak) ** 1.25;
+  // Half-width along the lobe (0 at the centre, 1 at the tip), as a fraction of the lobe length.
+  const half = (f: number) => .11 * width * ((f ** .85 * (1 - f) ** 1.25) / top * .7 + .3 * (1 - f) ** 1.5);
+  const point = (a: number, along: number, across: number) => [x + (Math.sin(a) * along + Math.cos(a) * across) * size, y + (-Math.cos(a) * along + Math.sin(a) * across) * size] as const;
+  const edge = (lobe: { a: number; length: number }, side: number) => Array.from({ length: steps + 1 }, (_, k) => {
+    const f = k / steps, serration = k > 2 && k < steps && k % 2 ? 1.08 : 1;
+    // A slight sideways curve keeps the lobes from looking ruler-straight.
+    return point(lobe.a, hub + (lobe.length - hub) * f, side * half(f) * lobe.length * serration + .025 * Math.sin(Math.PI * f) * lobe.length);
   });
+  const path = new Path2D(), parts: Path2D[] = [];
+  lobes.forEach((lobe, i) => {
+    const left = edge(lobe, -1), right = edge(lobe, 1).reverse();
+    if (i === 0) path.moveTo(...left[0]); else path.lineTo(...left[0]);
+    for (const p of left.slice(1)) path.lineTo(...p);
+    for (const p of right) path.lineTo(...p);
+    const part = new Path2D(); part.moveTo(x, y); for (const p of [...left, ...right]) part.lineTo(...p); part.closePath(); parts.push(part);
+  });
+  path.lineTo(...point(Math.PI, hub * .6, 0));
   path.closePath();
-  return { path, veins: lobes.map(lobe => at(lobe.a, lobe.length * .9)) };
+  return { path, parts, veins: lobes.map(lobe => point(lobe.a, lobe.length * .9, .025 * Math.sin(Math.PI * .9) * lobe.length)) };
 }
 
 // Sugar-maple leaf on the logo's plate, traced from the logo image (logo pixels: x from the logo's axis, y from the

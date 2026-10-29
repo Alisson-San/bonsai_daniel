@@ -276,26 +276,45 @@ function potGeometry(THREE: Three, rings: [number, number, number][], a: number,
 
 // Palmate Japanese-maple leaf (seven narrow pointed lobes, fine serration), as in the logo. Tinted per instance.
 function leafTexture(THREE: Three, size: number) {
-  const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
-  const c = canvas.getContext('2d')!, s = size * .5, palm = { x: size / 2, y: size * .62 };
-  // Slender lobes, a light centre and pale veins, and a dark rim so overlapping leaves stay distinct, as in the logo.
-  const { path, veins } = palmateLeaf(palm.x, palm.y, s, .22);
-  const fill = c.createRadialGradient(palm.x, palm.y, 2, palm.x, palm.y, s);
-  fill.addColorStop(0, '#ffffff'); fill.addColorStop(.55, '#ececec'); fill.addColorStop(1, '#c4c4c4');
-  c.fillStyle = fill; c.fill(path);
-  c.save(); c.clip(path);
-  // Each lobe is folded along its midrib: one half a little darker, as on the logo's leaves.
-  c.fillStyle = 'rgba(0,0,0,.16)';
-  for (const [vx, vy] of veins) {
-    const dx = vx - palm.x, dy = vy - palm.y;
-    c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(vx, vy); c.lineTo(palm.x + dx * .55 - dy * .35, palm.y + dy * .55 + dx * .35); c.closePath(); c.fill();
-  }
-  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = size / 150;
-  for (const [vx, vy] of veins) { c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(vx, vy); c.stroke(); }
-  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = size / 110; c.stroke(path);
-  c.restore();
-  c.strokeStyle = '#d8c8c0'; c.lineWidth = size / 110; c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(palm.x, size * .98); c.stroke();
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
+  // Two masks packed in one texture (alpha is the leaf): red holds the shading (each lobe light along its midrib and
+  // darker toward its edges, one side folded into shade), green the sheen (midribs, a pale rim along the edges and
+  // the centre), which the shader turns into the logo's soft pink highlights.
+  const s = size * .47, palm = { x: size / 2, y: size * .6 };
+  const { path, parts, veins } = palmateLeaf(palm.x, palm.y, s);
+  const paint = (draw: (c: CanvasRenderingContext2D) => void) => { const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; const c = canvas.getContext('2d')!; draw(c); return c.getImageData(0, 0, size, size).data; };
+  const shading = paint(c => {
+    c.fillStyle = '#c8c8c8'; c.fill(path);
+    parts.forEach((part, i) => {
+      const [vx, vy] = veins[i], dx = vx - palm.x, dy = vy - palm.y, length = Math.hypot(dx, dy), nx = -dy / length, ny = dx / length;
+      c.save(); c.clip(part);
+      // Across the lobe: dark edge, light midrib, then the folded side a little darker.
+      const across = c.createLinearGradient(palm.x + dx * .45 - nx * s * .14, palm.y + dy * .45 - ny * s * .14, palm.x + dx * .45 + nx * s * .14, palm.y + dy * .45 + ny * s * .14);
+      across.addColorStop(0, '#8c8c8c'); across.addColorStop(.47, '#ffffff'); across.addColorStop(.53, '#e2e2e2'); across.addColorStop(1, '#6e6e6e');
+      c.fillStyle = across; c.fillRect(0, 0, size, size);
+      c.restore();
+    });
+    c.save(); c.clip(path); c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = size / 110; c.stroke(path); c.restore();
+    c.strokeStyle = '#a0a0a0'; c.lineWidth = size / 100; c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(palm.x, Math.min(size - 2, palm.y + s * .55)); c.stroke();
+  });
+  const sheen = paint(c => {
+    c.save(); c.clip(path);
+    const glow = c.createRadialGradient(palm.x, palm.y, 0, palm.x, palm.y, s * .3);
+    glow.addColorStop(0, 'rgba(255,255,255,.8)'); glow.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = glow; c.fillRect(0, 0, size, size);
+    c.lineCap = 'round';
+    for (const [vx, vy] of veins) {
+      const line = c.createLinearGradient(palm.x, palm.y, vx, vy);
+      line.addColorStop(0, 'rgba(255,255,255,.9)'); line.addColorStop(.75, 'rgba(255,255,255,.5)'); line.addColorStop(1, 'rgba(255,255,255,0)');
+      c.strokeStyle = line; c.lineWidth = size / 70; c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(vx, vy); c.stroke();
+    }
+    c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = size / 60; c.stroke(path);
+    c.restore();
+  });
+  const out = new ImageData(size, size);
+  // The sheen is drawn in white with partial alpha, so its strength is the alpha channel.
+  for (let i = 0; i < out.data.length; i += 4) { out.data[i] = shading[i]; out.data[i + 1] = sheen[i + 3]; out.data[i + 3] = shading[i + 3]; }
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; canvas.getContext('2d')!.putImageData(out, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas); texture.anisotropy = 4;
   return texture;
 }
 
@@ -653,13 +672,13 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
 
   // Canopy as in the logo: a rounded triangular mound (peak slightly left of the trunk, sides falling diagonally,
   // right side longer and lower), built from overlapping tufts in layers. The underside stays open near the trunk.
-  const mound = { peakX: .1, peakY: 2.48, base: 1.15, left: 2.4, right: 2.45, depth: 1.3 };
+  const mound = { peakX: .1, peakY: 2.38, base: .92, left: 2.4, right: 2.45, depth: 1.3 };
   const side = (x: number) => Math.min(1, Math.abs(x - mound.peakX) / (x < mound.peakX ? mound.left : mound.right));
   const crownTop = (x: number) => mound.base + (mound.peakY - mound.base) * (1 - Math.pow(side(x), x < mound.peakX ? 1.6 : .75));
   // Nearly level underneath, opening up only around the trunk so the main branches show as in the logo.
-  const underside = (x: number) => mound.base + .85 * Math.exp(-((x - mound.peakX + .05) ** 2) / (2 * .4 * .4));
+  const underside = (x: number) => mound.base + 1.05 * Math.exp(-((x - mound.peakX + .05) ** 2) / (2 * .42 * .42));
   const clusters: { center: T.Vector3; normal: T.Vector3; inner: boolean }[] = [];
-  const tuftCount = compact ? 90 : 150;
+  const tuftCount = compact ? 100 : 125;
   const core = new V(mound.peakX, (mound.base + mound.peakY) / 2 - .2, 0);
   for (let attempts = 0; clusters.length < tuftCount && attempts < 6000; attempts++) {
     const x = mound.peakX - mound.left + rand() * (mound.left + mound.right), top = crownTop(x), bottom = underside(x);
@@ -723,10 +742,10 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
 
   // ---- Leaves: instanced palmate leaves facing out and toward the viewer (never edge-on),
   // revealed in a wave on entrance and moved by a light breeze in the vertex shader.
-  const leafMap = leafTexture(THREE, compact ? 128 : 256); textures.push(leafMap);
+  const leafMap = leafTexture(THREE, 256); textures.push(leafMap);
   const leafShape = leafGeometry(THREE);
   // Fewer, larger leaves of varied sizes, so single leaves read clearly as in the logo.
-  const perOuter = compact ? 9 : 12, perInner = compact ? 5 : 7;
+  const perOuter = 10, perInner = compact ? 5 : 6;
   const count = clusters.reduce((sum, cluster) => sum + (cluster.inner ? perInner : perOuter), 0);
   const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 } };
   const delays = new Float32Array(count);
@@ -745,16 +764,22 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
 #endif`);
   };
   // Leaves skip tone mapping: ACES pushes saturated reds toward salmon/pink; the logo red must stay pure.
-  const leafMaterial = new THREE.MeshStandardMaterial({ map: leafMap, alphaTest: .5, side: THREE.DoubleSide, roughness: .85, metalness: 0, toneMapped: false, fog: false });
-  const glow = { value: theme === 'dark' ? .48 : .3 };
+  // Little environment light, so leaves in shade stay deep crimson instead of turning dusty pink.
+  const leafMaterial = new THREE.MeshStandardMaterial({ map: leafMap, alphaTest: .5, side: THREE.DoubleSide, roughness: .85, metalness: 0, toneMapped: false, fog: false, envMapIntensity: .15 });
+  const leafGlow = { dark: .16, light: .12 }, glow = { value: leafGlow[theme] };
   leafMaterial.onBeforeCompile = shader => {
     patch(shader);
     shader.uniforms.uGlow = glow;
-    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat facing = abs(dot(normalize(normal), normalize(vViewPosition)));\ntotalEmissiveRadiance += diffuseColor.rgb * uGlow * (.5 + pow(1. - facing, 2.));')
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uGlow;')
+      // Red channel: shading; green: midrib sheen (see leafTexture).
+      .replace('#include <map_fragment>', 'vec4 leafTexel = texture2D(map, vMapUv);\ndiffuseColor.rgb *= leafTexel.r;\ndiffuseColor.a *= leafTexel.a;\nfloat leafSheen = leafTexel.g;')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat facing = abs(dot(normalize(normal), normalize(vViewPosition)));\ntotalEmissiveRadiance += diffuseColor.rgb * uGlow * (.5 + pow(1. - facing, 2.));\n// Pink sheen along the veins, stronger on lit leaves, as in the logo.\ntotalEmissiveRadiance += leafSheen * (diffuseColor.rgb * .5 + vec3(.1, .025, .025) * diffuseColor.r);')
       // Scale bright texels down as a whole instead of clipping each channel, so lit leaves stay pure red, not coral.
       // Almost no white reflection, which would wash the red toward coral.
       .replace('#include <aomap_fragment>', 'reflectedLight.directSpecular *= .15;\nreflectedLight.indirectSpecular *= .1;\n#include <aomap_fragment>')
-      .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb /= max(1., max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b)));\n#include <tonemapping_fragment>');
+      // Then hold green and blue to the logo's ratios (linear: about 1–4% of red, more in the highlights), so the
+      // crown keeps the pure red of the logo in shade and in light instead of drifting to pink or grey.
+      .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb /= max(1., max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b)));\ngl_FragColor.g = min(gl_FragColor.g, gl_FragColor.r * mix(.012, .04, gl_FragColor.r));\ngl_FragColor.b = min(gl_FragColor.b, gl_FragColor.r * mix(.01, .032, gl_FragColor.r));\n#include <tonemapping_fragment>');
   };
   const leafDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: leafMap, alphaTest: .5 });
   leafDepth.onBeforeCompile = patch;
@@ -762,9 +787,11 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   foliage.customDepthMaterial = leafDepth; foliage.castShadow = true; foliage.receiveShadow = true;
   const toViewer = new V(0, .25, 1).normalize(), basis = new THREE.Matrix4(), axisX = new V(), axisY = new V(), normal = new V(), position = new V(), quaternion = new THREE.Quaternion(), scale = new V();
   const crown = new V(mound.peakX, mound.peakY, 0);
-  // Shades: pure Acer red dominant, deep reds inside and underneath, a few lighter leaves where the key light hits (upper left).
-  // Reds sampled from the logo (median leaf ≈ #D21615): almost no blue, so the crown reads pure Acer red.
-  const deep = [new THREE.Color('#7C0B0C'), new THREE.Color('#900E0F'), new THREE.Color('#A41212')], red = new THREE.Color('#E01A18'), shade = new THREE.Color('#C01414'), light = new THREE.Color('#F2301E');
+  // Light and shade as in the logo: leaves on top of and outside each tuft catch the light, those underneath and inside
+  // fall into deep crimson, and the crown is lighter toward the upper left (key light). Ramp sampled from the logo's
+  // leaves, darkest to brightest; the brightest lean pink, not orange.
+  const ramp = ['#4A070A', '#760C0F', '#A81315', '#D21A1A', '#EC2A27', '#FF4540'].map(hex => new THREE.Color(hex));
+  const shadeAt = (value: number) => { const f = Math.min(1, Math.max(0, value)) * (ramp.length - 1), k = Math.min(ramp.length - 2, Math.floor(f)); return color.copy(ramp[k]).lerp(ramp[k + 1], f - k); };
   const gauss = () => (rand() + rand() + rand() - 1.5) / 1.5;
   let index = 0;
   for (const cluster of clusters) for (let k = 0, n = cluster.inner ? perInner : perOuter; k < n; k++) {
@@ -775,13 +802,13 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     axisY.copy(cluster.normal).add(new V((rand() - .5) * 1.2, .3, (rand() - .5) * 1.2)); axisY.addScaledVector(normal, -axisY.dot(normal)).normalize();
     axisX.crossVectors(axisY, normal).normalize();
     basis.makeBasis(axisX, axisY, normal); quaternion.setFromRotationMatrix(basis);
-    scale.setScalar(cluster.inner ? .34 + rand() * .18 : (.34 + Math.pow(rand(), 1.6) * .34) * (rand() < .1 ? 1.2 : 1));
+    scale.setScalar(cluster.inner ? .38 + rand() * .2 : (.38 + Math.pow(rand(), 1.6) * .38) * (rand() < .1 ? 1.2 : 1));
     foliage.setMatrixAt(index, basis.compose(position, quaternion, scale));
-    if (cluster.inner) color.copy(deep[Math.floor(rand() * deep.length)]);
-    else {
-      const lit = (position.y - mound.base) / (mound.peakY - mound.base) * .7 - (position.x - mound.peakX) / (mound.left + mound.right) * .6 + position.z * .12 + (rand() - .5) * .35;
-      color.copy(lit > .62 && rand() < .5 ? light : lit < .05 ? shade : red);
-    }
+    const rel = position.clone().sub(cluster.center);
+    const tuft = .5 + rel.y / .22 * .22 + rel.dot(cluster.normal) / .34 * .18;
+    const sky = (position.y - mound.base) / (mound.peakY - mound.base) * .22 - (position.x - mound.peakX) / (mound.left + mound.right) * .2 + position.z / mound.depth * .1;
+    // Leaves toward the back of the crown are shaded too.
+    shadeAt((tuft * .9 + sky - .1 + Math.min(0, position.z) / mound.depth * .25 + (rand() - .5) * .22) * (cluster.inner ? .45 : 1));
     foliage.setColorAt(index, color);
     delays[index++] = Math.min(.95, position.distanceTo(crown) / 3.2 * .85 + rand() * .1);
   }
@@ -970,7 +997,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
       const palette = palettes[next];
       fog.color.set(palette.fog); fog.density = palette.density;
       hemi.intensity = palette.hemi; key.intensity = palette.key; back.intensity = palette.back;
-      scene.environmentIntensity = environmentLevel[next]; glow.value = next === 'dark' ? .48 : .3;
+      scene.environmentIntensity = environmentLevel[next]; glow.value = leafGlow[next];
       bandMaterial.uniforms.uAlpha.value = archBand[next].alpha; bandMaterial.uniforms.uSoft.value = archBand[next].soft;
       if (reduced || !frame) render(0);
     },
