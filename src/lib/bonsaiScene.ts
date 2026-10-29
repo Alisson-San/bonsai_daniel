@@ -15,11 +15,10 @@ export function loadThree() {
 export type BonsaiScene = { setTheme: (theme: Theme) => void; dispose: () => void };
 export type PageRect = { x: number; y: number; width: number; height: number };
 // entrance: false starts on the finished composition (it replaces a still of it on phones).
-// onTrace reports each start-up step (shown on the page with ?debug3d); onError reports a failure after the scene
-// was created (shader compile, first frame), so the hero can fall back instead of waiting forever.
+// onError reports a failure after the scene was created (first frame), so the hero can fall back instead of waiting.
 // gentle: for visitors who prefer reduced motion. The entrance, the light sweep and a softer breeze still play;
 // nothing follows the pointer, the device tilt or the scroll.
-type Options = { theme: Theme; reduced: boolean; gentle?: boolean; entrance?: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void; onTrace?: (step: string) => void; onError?: (error: unknown) => void };
+type Options = { theme: Theme; reduced: boolean; gentle?: boolean; entrance?: boolean; onFirstFrame: () => void; onCanopy?: (rect: PageRect) => void; onError?: (error: unknown) => void };
 
 // Optional real model: drop a .glb here and it replaces the procedural tree and pot on the same stage.
 export const HERO_MODEL_URL = '/models/bonsai.glb';
@@ -510,15 +509,14 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
 }
 
 // Built in steps that yield to the browser in between, so a slow phone keeps scrolling while the scene is made.
-export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, gentle = false, entrance: animateEntrance = true, onFirstFrame, onCanopy, onTrace = () => {}, onError = () => {} }: Options): Promise<BonsaiScene> {
+export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement, { theme, reduced, gentle = false, entrance: animateEntrance = true, onFirstFrame, onCanopy, onError = () => {} }: Options): Promise<BonsaiScene> {
   const pause = () => new Promise<void>(resolve => setTimeout(resolve, 0));
   // A step that may hang on some GPUs or networks gives up after `ms`, so start-up always moves on.
-  // Resolves true when the step finished, false when it gave up.
-  const within = <R,>(work: Promise<R>, ms: number, step: string) => new Promise<boolean>(resolve => {
-    const timer = setTimeout(() => { onTrace(`${step}: sem resposta em ${ms / 1000} s, seguindo`); resolve(false); }, ms);
-    work.then(() => { onTrace(`${step}: ok`); resolve(true); }, error => { onTrace(`${step}: ${error instanceof Error ? error.message : String(error)}`); resolve(false); }).finally(() => clearTimeout(timer));
+  // Resolves true when the step finished, false when it failed or gave up.
+  const within = <R,>(work: Promise<R>, ms: number) => new Promise<boolean>(resolve => {
+    const timer = setTimeout(() => resolve(false), ms);
+    work.then(() => resolve(true), () => resolve(false)).finally(() => clearTimeout(timer));
   });
-  onTrace('criando cena');
   const settled = reduced || !animateEntrance;
   const compact = innerWidth < 760;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -1016,21 +1014,20 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // for the final and the entrance (transparent) material states, so on phones neither the first frame
   // nor the end of the entrance blocks the page for seconds.
   const warm = async () => {
-    await within(environmentReady, 4000, 'luz de ambiente');
+    await within(environmentReady, 4000);
     if (disposed) return;
     // compileAsync waits for the driver's parallel compile; it is capped so a driver that never reports completion
     // cannot leave the hero waiting: the first frame then compiles whatever is left.
-    const compiledInTime = await within(renderer.compileAsync(scene, camera), 3000, 'shaders');
+    const compiledInTime = await within(renderer.compileAsync(scene, camera), 3000);
     if (settled || disposed) return;
     for (const material of fading) material.transparent = true;
-    if (compiledInTime) await within(renderer.compileAsync(scene, camera), 3000, 'shaders da entrada');
+    if (compiledInTime) await within(renderer.compileAsync(scene, camera), 3000);
   };
   resize();
-  onTrace('cena montada');
-  warm().catch(error => onTrace(`preparo: ${error instanceof Error ? error.message : String(error)}`)).then(() => {
+  warm().catch(() => {}).then(() => {
     if (disposed) return;
-    try { compiled = true; render(0); onTrace('primeiro quadro desenhado'); start(); }
-    catch (error) { onTrace(`primeiro quadro falhou: ${error instanceof Error ? error.message : String(error)}`); onError(error); }
+    try { compiled = true; render(0); start(); }
+    catch (error) { onError(error); }
   });
 
   return {

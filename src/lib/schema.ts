@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const angles = ['Frente (Omote)', 'Costas (Ura)', 'Detalhe de Tronco / Nebari', 'Escala Real (Comparação Humana)'] as const;
 export const statuses = ['disponivel', 'reservado', 'vendido'] as const;
 export const statusLabels = { disponivel: 'Disponível', reservado: 'Reservado', vendido: 'Vendido' };
-export const safeImageUrl = (url: string) => /^\/images\/[\w.-]+$/.test(url) || /^https?:\/\//i.test(url) && (() => { try { const u = new URL(url); return !!u.hostname && !u.username && !u.password; } catch { return false; } })() || /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url);
+export const safeImageUrl = (url: string) => /^\/images\/[\w.-]+$/.test(url) || /^https:\/\//i.test(url) && (() => { try { const u = new URL(url); return !!u.hostname && !u.username && !u.password; } catch { return false; } })() || /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url);
 const shortText = z.string().trim().max(200);
 export const defaultTexts = {
   bioPageLead: 'Bonsaísta há 15 anos, com diversos cursos, workshops e premiações em eventos e exposições.',
