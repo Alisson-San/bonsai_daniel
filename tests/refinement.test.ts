@@ -35,3 +35,13 @@ it('textos antigos do site salvos no navegador passam aos novos; textos editados
  assert.equal(upgraded.bio, '');
  assert.equal(upgraded.heroDescription, 'Descrição própria');
 });
+
+it('catálogos salvos antes da biografia e das seções novas continuam válidos, com os textos padrão', async () => {
+ const { catalogSchema } = await import('../src/lib/schema.ts');
+ const old = structuredClone(initialCatalog) as Record<string, unknown> & { settings: Record<string, unknown> };
+ for (const key of ['bioPageLead', 'bioStory', 'bioHighlights', 'bioMilestones', 'bioGallery', 'purchaseSteps', 'testimonials']) delete old.settings[key];
+ const parsed = catalogSchema.parse(old);
+ assert.equal(parsed.settings.purchaseSteps, initialCatalog.settings.purchaseSteps);
+ assert.equal(parsed.settings.testimonials, '');
+ assert.deepEqual(parsed.settings.bioGallery, []);
+});

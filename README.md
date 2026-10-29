@@ -178,6 +178,13 @@ Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo bot
 
 A navegação entre a página inicial e a biografia é feita no próprio app (com transição de página onde o navegador suporta) e o botão voltar funciona. O build pré-renderiza as duas páginas (`dist/index.html` e `dist/biografia/index.html`, ver `vercel.json`), e o app hidrata o HTML pronto em vez de recriá-lo.
 
+## Seções da página inicial
+
+- **Vendidos:** exemplares marcados como "Vendido" saem da coleção e aparecem em "Já encontraram um novo lar", com foto em tons apagados e acesso à ficha. Na curadoria e no filtro "Vendido" eles continuam na coleção, para edição.
+- **Como funciona:** passos da compra, editáveis na curadoria (um por linha, `título | texto`).
+- **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (um por linha, `depoimento | nome | cidade`).
+- **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema recua e esmaece e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
+
 ## Abertura e 3D
 
 - **Entrada:** o emblema entra em foco, depois título, texto, botão e benefícios sobem em sequência (`src/system.css`, desativado com movimento reduzido).

@@ -5,9 +5,10 @@ export const statuses = ['disponivel', 'reservado', 'vendido'] as const;
 export const statusLabels = { disponivel: 'Disponível', reservado: 'Reservado', vendido: 'Vendido' };
 export const safeImageUrl = (url: string) => /^\/images\/[\w.-]+$/.test(url) || /^https?:\/\//i.test(url) && (() => { try { const u = new URL(url); return !!u.hostname && !u.username && !u.password; } catch { return false; } })() || /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url);
 const shortText = z.string().trim().max(200);
-export const defaultBiography = {
+export const defaultTexts = {
   bioPageLead: 'Bonsaísta há 15 anos, com diversos cursos, workshops e premiações em eventos e exposições.',
   bioHighlights: '15 anos | dedicados ao bonsai\nCursos e workshops | estudo e prática constantes\nPremiações | em eventos e exposições',
+  purchaseSteps: 'Escolha | Veja as fotos reais, as medidas e o valor de cada exemplar.\nConverse | Toque em Tenho interesse e fale direto com o Daniel pelo WhatsApp: tire dúvidas e peça mais fotos.\nReserve | Combinem a forma de pagamento e o exemplar fica reservado para você.\nReceba | Embalagem cuidadosa e envio seguro para todo o Brasil.',
 };
 const imageSchema = z.object({ id: z.string().min(1), url: z.string().max(12_000_000).refine(safeImageUrl, 'Use uma imagem JPEG, PNG, WebP ou GIF, ou uma URL http(s).'), anguloTag: z.enum(angles), label: shortText.optional(), crop: z.object({ scale: z.number().min(1).max(4), x: z.number().min(0).max(100), y: z.number().min(0).max(100) }).optional() });
 export const stageSchema = z.object({
@@ -38,12 +39,15 @@ export const settingsSchema = z.object({
   bioTitle: shortText, bio: z.string().max(6000), whatsapp: shortText,
   instagram: shortText, location: shortText, messageTemplate: z.string().min(1).max(4000), fotoCultivador: imageUrl.optional(),
   // Biography page (/biografia). Defaults keep older catalogs and backups valid.
-  bioPageLead: z.string().max(2000).default(defaultBiography.bioPageLead),
+  bioPageLead: z.string().max(2000).default(defaultTexts.bioPageLead),
   bioStory: z.string().max(20000).default(''),
   // One highlight per line: "headline | detail".
-  bioHighlights: z.string().max(2000).default(defaultBiography.bioHighlights),
+  bioHighlights: z.string().max(2000).default(defaultTexts.bioHighlights),
   // One milestone per line: "year | title | text".
   bioMilestones: z.string().max(12000).default(''),
+  // Home page: buying steps ("title | text") and testimonials ("quote | name | city"), one per line.
+  purchaseSteps: z.string().max(4000).default(defaultTexts.purchaseSteps),
+  testimonials: z.string().max(12000).default(''),
   bioGallery: z.array(z.object({ id: z.string().min(1), url: imageUrl, legenda: shortText.default('') })).max(24).default([]),
 });
 export const catalogSchema = z.object({
