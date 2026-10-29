@@ -36,7 +36,8 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
   if (!canvas || !context) return;
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const sprites = layers.map(layer => colors.map(color => sprite(color, layer.blur)));
-  const count = innerWidth < 760 ? 10 : 18;
+  // With reduced motion, fewer leaves fall, slower and only the small far and mid layers.
+  const count = (innerWidth < 760 ? 10 : 18) / (media.matches ? 2 : 1);
   type Leaf = { x: number; y: number; startY: number; size: number; layer: number; sprite: HTMLCanvasElement; phase: number; sway: number; spin: number; rotation: number; flip: number; wait: number };
   const leaves: Leaf[] = [];
   const spawn = (leaf: Partial<Leaf>, wait: number) => {
@@ -50,7 +51,8 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
    return Object.assign(leaf, { x, y, startY: rect ? rect.y : y, size: min + Math.random() * (max - min), sprite: sprites[layer][Math.floor(Math.random() * colors.length)], phase: Math.random() * 6.28, sway: 18 + Math.random() * 30, spin: (Math.random() - .5) * 1.4, rotation: Math.random() * 6.28, flip: .6 + Math.random() * 1.2, wait }) as Leaf;
   };
   // Mostly mid-depth leaves, a few far ones and two or three large ones right in front.
-  for (let i = 0; i < count; i++) leaves.push(spawn({ layer: i < 2 || (count > 10 && i === 2) ? 2 : i % 3 === 0 ? 0 : 1 }, 1.6 + Math.random() * 6));
+  const calm = media.matches, pace = calm ? .6 : 1;
+  for (let i = 0; i < count; i++) leaves.push(spawn({ layer: !calm && (i < 2 || (count > 10 && i === 2)) ? 2 : i % 3 === 0 ? 0 : 1 }, 1.6 + Math.random() * 6));
   let frame = 0, previous = 0, width = 0, height = 0, time = 0;
   const resize = () => {
    const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -65,7 +67,7 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
    for (const leaf of leaves) {
     if (leaf.wait > 0) { leaf.wait -= real; if (leaf.wait <= 0) spawn(leaf, 0); continue; }
     const layer = layers[leaf.layer];
-    leaf.y += layer.fall * dt; leaf.x += (Math.sin(time * .9 + leaf.phase) * leaf.sway + 6) * dt; leaf.rotation += leaf.spin * dt;
+    leaf.y += layer.fall * pace * dt; leaf.x += (Math.sin(time * .9 + leaf.phase) * leaf.sway + 6) * pace * dt; leaf.rotation += leaf.spin * pace * dt;
     // Each leaf falls past the first cards (about 2.6 screens below the crown), then rests before falling again.
     if (leaf.y - leaf.startY > height * 2.6) { spawn(leaf, 1 + Math.random() * 4); continue; }
     const sx = leaf.x - scrollX, sy = leaf.y - scrollY, crown = source.current;
@@ -81,7 +83,7 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
   };
   const start = () => {
    cancelAnimationFrame(frame); frame = 0; previous = 0;
-   if (media.matches || document.hidden) { context.clearRect(0, 0, width, height); return; }
+   if (document.hidden) { context.clearRect(0, 0, width, height); return; }
    frame = requestAnimationFrame(draw);
   };
   resize(); start();

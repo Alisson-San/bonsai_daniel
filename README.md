@@ -221,6 +221,8 @@ A cena é montada sobre as medidas da logo oficial (`public/images/logo_escuro.j
 
 A cena é montada em etapas que devolvem a vez ao navegador entre si, para a página continuar rolando enquanto ela é criada. Enquanto carrega, a imagem estática aparece esmaecida, como um "fantasma" do emblema; quando a cena fica pronta, toca a entrada por cima (o arco se desenha, o vaso aparece, as folhas surgem em onda) e o fantasma some; depois, só inclinação de até 8° com o ponteiro e brisa no vertex shader. Movimento reduzido mostra a cena estática. Pixel ratio máximo 2 (1,5 no celular), menos detalhe e placa em resolução menor em telas pequenas.
 
+**Movimento reduzido:** quem tem "reduzir movimento" no sistema (por exemplo, Windows com os efeitos de animação desligados, o que muitos computadores trazem de fábrica) vê uma versão suave do topo, não um logo parado: a entrada do logo e o brilho dourado continuam, a copa balança mais de leve, metade das folhas cai mais devagar e os textos aparecem esmaecendo; sai o que acompanha o ponteiro, a inclinação do aparelho ou a rolagem e os movimentos de deslizar.
+
 **Proteções e diagnóstico:** cada etapa lenta do início do 3D (luz de ambiente, compilação de shaders) tem limite de tempo; se o driver não responder, a cena é desenhada assim mesmo. Se o 3D não ficar pronto em 8 s, a imagem estática aparece inteira em vez do fantasma. Abrindo o site com `?debug3d` no endereço (ex.: `https://bonsaidaniel.vercel.app/?debug3d`), um painel na tela lista cada etapa com o tempo e qualquer erro, útil no celular.
 
 Ao mudar a cena, gere de novo as imagens estáticas (`node scripts/poster.cjs`, veja "Desempenho no celular").

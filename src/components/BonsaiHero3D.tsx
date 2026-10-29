@@ -14,6 +14,8 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
  status.current = onStatus;
  useEffect(() => {
   let cancelled = false;
+  // Visitors who prefer reduced motion (often an OS default, e.g. Windows with animation effects off) get a gentle
+  // version of the hero, not a frozen one.
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // A still of the finished scene (hero-poster-*.webp) shows at once on every screen as a faint "ghost" of the emblem
   // (in full with reduced motion), with leaves already falling from its crown; when the live scene is ready it plays
@@ -40,12 +42,13 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
   // If the live scene is not up after 8 s, show the still in full instead of the faint ghost.
   const watchdog = window.setTimeout(() => { if (!ready) { hero?.classList.add('is-slow'); log('3D ainda não ficou pronto em 8 s: mostrando a imagem inteira'); } }, 8000);
   // Three.js downloads right away; the scene is built once the page is idle, so text and photos come first.
+  log(`movimento reduzido no sistema: ${reduced ? 'sim (versão suave)' : 'não'}`);
   log('baixando Three.js');
   loadThree().then(() => log('Three.js carregado'), error => log(`Three.js não carregou: ${describe(error)}`));
   const fail = (error: unknown) => { log(`falhou: ${describe(error)}`); if (!cancelled) status.current('failed'); };
   const begin = () => loadThree().then(THREE => {
    if (cancelled || !ref.current) return;
-   return createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, entrance: true, onTrace: log, onError: fail, onFirstFrame: () => { ready = true; hero?.classList.remove('is-slow'); log('pronto'); status.current('ready'); }, onCanopy: rect => { canopy.current = rect; } }).then(created => {
+   return createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced: false, gentle: reduced, entrance: true, onTrace: log, onError: fail, onFirstFrame: () => { ready = true; hero?.classList.remove('is-slow'); log('pronto'); status.current('ready'); }, onCanopy: rect => { canopy.current = rect; } }).then(created => {
     if (cancelled) { created.dispose(); return; }
     // The theme may have changed while the scene was being built.
     scene.current = created; created.setTheme(themeRef.current);

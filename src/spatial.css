@@ -158,7 +158,6 @@
 
 /* Falling leaves overlay: above page content (under the header and dialogs), never catches the pointer. */
 .falling-leaves{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:45}
-@media(prefers-reduced-motion:reduce){.falling-leaves{display:none}}
 /* A still of the finished 3D scene shows with the first paint on every screen and fades out once the live scene is
    ready. It is cropped to the box the camera fits (scripts/poster.cjs), so `contain` lines it up with the scene. */
 .hero-spatial .hero-stage::before{content:"";position:absolute;inset:0;pointer-events:none;background:url('/images/hero-poster-dark.webp') center/contain no-repeat;transition:opacity .5s ease-out .2s}
@@ -166,7 +165,8 @@
 @media(min-width:801px){.hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-dark-large.webp')}[data-theme="light"] .hero-spatial .hero-stage::before{background-image:url('/images/hero-poster-light-large.webp')}}
 .hero-spatial.is-ready .hero-stage::before,.hero-spatial.is-failed .hero-stage::before{opacity:0}
 /* With motion, the still is only a ghost while the 3D loads: the entrance then draws the emblem over it. */
-@media(prefers-reduced-motion:no-preference){.hero-spatial:not(.is-ready):not(.is-failed) .hero-stage::before{opacity:.22;filter:saturate(.5) blur(1.5px)}.hero-spatial .hero-stage::before{transition:opacity .9s ease-out,filter .9s ease-out}}
+.hero-spatial:not(.is-ready):not(.is-failed) .hero-stage::before{opacity:.22;filter:saturate(.5) blur(1.5px)}
+.hero-spatial .hero-stage::before{transition:opacity .9s ease-out,filter .9s ease-out}
 /* The live scene did not start in time: the still shows in full instead of the ghost. */
 .hero-spatial.is-slow:not(.is-ready) .hero-stage::before{opacity:1;filter:none}
 /* ?debug3d */
