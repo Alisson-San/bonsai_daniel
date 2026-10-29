@@ -1,5 +1,5 @@
 import type * as T from 'three';
-import { acerOutline, palmateLeaf } from './acer.ts';
+import { palmateLeaf, plateLeafOutline, plateLeafVeins } from './acer.ts';
 import type { Theme } from './theme.ts';
 
 type Three = typeof T;
@@ -140,12 +140,15 @@ type Gnarl = {
   // Rotation of the flutes and of the bark streaks along the limb (radians).
   twist?: (t: number, p: T.Vector3) => number;
   lumps?: number; flatten?: number; up?: T.Vector3; seed?: number; tone?: number;
+  // underside: how much darker the side facing away from the reference axis is (roots lying on the soil);
+  // occlusion: extra darkening per ring (the trunk near the soil).
+  underside?: number; occlusion?: (t: number, p: T.Vector3) => number;
 };
 // Bark tube for the trunk, roots and main branches. The cross-section is shaped by flutes (the buttresses that
 // run up from each root and slowly spiral) plus noise lumps; grooves get darker vertex colours and the bark UVs
 // follow the spiral. The angle reference is the x axis (or `up` for lying roots), so a flute at angle a faces
 // (cos a, 0, sin a) on an upright trunk. `flatten` squashes the section along that reference (roots on the soil).
-function barkTube(THREE: Three, curve: T.Curve<T.Vector3>, segments: number, radial: number, { radius, flutes = [], twist = () => 0, lumps = .05, flatten = 1, up, seed = 1, tone = 1 }: Gnarl) {
+function barkTube(THREE: Three, curve: T.Curve<T.Vector3>, segments: number, radial: number, { radius, flutes = [], twist = () => 0, lumps = .05, flatten = 1, up, seed = 1, tone = 1, underside = 0, occlusion }: Gnarl) {
   const noise = noise2(seed), length = curve.getLength();
   const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = [];
   const p = new THREE.Vector3(), tangent = new THREE.Vector3(), n = new THREE.Vector3(), b = new THREE.Vector3();
@@ -169,12 +172,13 @@ function barkTube(THREE: Three, curve: T.Curve<T.Vector3>, segments: number, rad
       const lump = (noise((j % radial) / radial * around, t * along, around, along, 3) - .5) * 2 * lumps;
       ring[j] = base * (1 + swell + lump); ringMean += ring[j] / (radial + 1);
     }
+    const ringShade = tone * (occlusion ? occlusion(t, p) : 1);
     for (let j = 0; j <= radial; j++) {
       const a = j / radial * Math.PI * 2, r = ring[j], cos = Math.cos(a) * r * flatten, sin = Math.sin(a) * r;
       positions.push(p.x + n.x * cos + b.x * sin, p.y + n.y * cos + b.y * sin, p.z + n.z * cos + b.z * sin);
       uvs.push(j / radial - turn / (Math.PI * 2), t * vScale);
-      // Ambient occlusion: grooves between flutes are darker, crests lighter.
-      const shade = Math.min(1.15, Math.max(.32, .82 + 1.9 * (r / ringMean - 1))) * tone;
+      // Ambient occlusion: grooves between flutes go almost black and crests lighter, as on the logo's trunk.
+      const shade = Math.min(1.2, Math.max(.16, .76 + 2.9 * (r / ringMean - 1))) * ringShade * (1 - underside * (.5 - .5 * Math.cos(a)));
       colors.push(shade, shade * .97, shade * .92);
     }
   }
@@ -274,14 +278,21 @@ function potGeometry(THREE: Three, rings: [number, number, number][], a: number,
 function leafTexture(THREE: Three, size: number) {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const c = canvas.getContext('2d')!, s = size * .5, palm = { x: size / 2, y: size * .62 };
-  const { path, veins } = palmateLeaf(palm.x, palm.y, s);
+  // Slender lobes, a light centre and pale veins, and a dark rim so overlapping leaves stay distinct, as in the logo.
+  const { path, veins } = palmateLeaf(palm.x, palm.y, s, .22);
   const fill = c.createRadialGradient(palm.x, palm.y, 2, palm.x, palm.y, s);
-  fill.addColorStop(0, '#ffffff'); fill.addColorStop(.7, '#f0f0f0'); fill.addColorStop(1, '#d2d2d2');
+  fill.addColorStop(0, '#ffffff'); fill.addColorStop(.55, '#ececec'); fill.addColorStop(1, '#c4c4c4');
   c.fillStyle = fill; c.fill(path);
   c.save(); c.clip(path);
-  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = size / 170;
+  // Each lobe is folded along its midrib: one half a little darker, as on the logo's leaves.
+  c.fillStyle = 'rgba(0,0,0,.16)';
+  for (const [vx, vy] of veins) {
+    const dx = vx - palm.x, dy = vy - palm.y;
+    c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(vx, vy); c.lineTo(palm.x + dx * .55 - dy * .35, palm.y + dy * .55 + dx * .35); c.closePath(); c.fill();
+  }
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = size / 150;
   for (const [vx, vy] of veins) { c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(vx, vy); c.stroke(); }
-  c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = size / 110; c.stroke(path);
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = size / 110; c.stroke(path);
   c.restore();
   c.strokeStyle = '#d8c8c0'; c.lineWidth = size / 110; c.beginPath(); c.moveTo(palm.x, palm.y); c.lineTo(palm.x, size * .98); c.stroke();
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
@@ -311,32 +322,57 @@ const archBand = { dark: { alpha: .7, soft: .3 }, light: { alpha: .96, soft: .06
 // Pot: rounded rectangle whose front face carries "BONSAI" and sinks into the plate (logo columns 465–1040).
 const POT = { halfWidth: (1040 - 465) / 2 / LOGO.scale, halfDepth: .8, roundness: 7 };
 
-// The nameplate is painted on a canvas in the logo's proportions: columns 205–1315, top edge on row 620,
-// body down to row 880, shield tab down to row 945.
-const PLAQUE = { width: 2048, height: 690, left: 40, right: 2008, top: 60 };
-const PLAQUE_PX = (PLAQUE.right - PLAQUE.left) / ((1315 - 205) / LOGO.scale); // canvas pixels per scene unit
-const plaqueY = (py: number) => PLAQUE.top + (py - 620) / LOGO.scale * PLAQUE_PX;
+// The nameplate is painted on a canvas in the logo's proportions, measured on the logo image: edges on columns
+// 212 and 1308, top edge on row 621, body down to row 877.5, corner notches of 47 px, shield tab down to row 958.
+const PLAQUE = { width: 2048, height: 720, left: 40, right: 2008, top: 60 };
+const PLAQUE_PX = (PLAQUE.right - PLAQUE.left) / ((1308 - 212) / LOGO.scale); // canvas pixels per scene unit
+const plaqueY = (py: number) => PLAQUE.top + (py - 621) / LOGO.scale * PLAQUE_PX;
+// Tab edge measured column by column: [distance from the axis, depth below the body] in logo pixels.
+const TAB_PROFILE = [[95, 0], [94, .5], [92, 4], [90, 8.5], [88, 14.5], [84, 23], [80, 30], [76, 35.5], [72, 40], [68, 44.5], [64, 48.5], [60, 51.5], [56, 54.5], [52, 57], [48, 59.5], [44, 62], [40, 64], [36, 66], [32, 68], [28, 69], [24, 71], [20, 72], [16, 73], [12, 74], [8, 75], [4, 77.5], [0, 80.5]];
 const logoPx = (px: number) => px / LOGO.scale * PLAQUE_PX;
 // Border widths in canvas pixels as drawn in the logo; on small screens each keeps a minimum width in screen pixels.
 const PLAQUE_BORDER = { outer: logoPx(8), gap: logoPx(9), inner: logoPx(3.5) };
 const PLAQUE_BORDER_MIN = { outer: 2, gap: 2.5, inner: 1 };
 type Border = { outer: number; inner: number; gap: number };
 
-// Body with concave quarter-circle notches at the four corners and a pointed shield tab under the centre.
+// ---- Framing. The camera fits the composition (arch top to plate bottom, plate width) into the stage, keeping it
+// at 93% of the stage height or 94% of its width. The still (hero-poster-*.webp) is cropped to that same box, so a
+// plain `background-size: contain` on the stage lines it up with the live scene on any screen.
+const PLANE_TOP = logoY(621) + PLAQUE.top / PLAQUE_PX, PLANE_HEIGHT = PLAQUE.height / PLAQUE_PX;
+const FIT = { height: .93, width: .94 };
+const COMPOSITION = (() => {
+  const top = ARCH.centerY + ARCH.outer + ARCH.outerWidth / 2 + .05, bottom = PLANE_TOP - PLANE_HEIGHT;
+  return { centerY: (top + bottom) / 2, halfHeight: (top - bottom) / 2, halfWidth: (PLAQUE.right - PLAQUE.left) / PLAQUE_PX / 2 + .05 };
+})();
+const POSTER_BOX = { width: 2 * COMPOSITION.halfWidth / FIT.width, height: 2 * COMPOSITION.halfHeight / FIT.height };
+// Aspect of the still, and where the crown sits in it (fractions; logo columns 320–1205, rows 40–460), so falling
+// leaves can start before the scene is ready.
+export const POSTER = {
+  aspect: POSTER_BOX.width / POSTER_BOX.height,
+  crown: {
+    x: (logoX(320) + POSTER_BOX.width / 2) / POSTER_BOX.width, width: (logoX(1205) - logoX(320)) / POSTER_BOX.width,
+    y: (COMPOSITION.centerY + POSTER_BOX.height / 2 - logoY(40)) / POSTER_BOX.height, height: (logoY(40) - logoY(460)) / POSTER_BOX.height,
+  },
+};
+
+// Body with concave quarter-circle notches at the four corners and the logo's bowl-shaped tab, which ends in a
+// small point under the centre.
 function plaqueOutline() {
-  const { left: L, right: R, top: T } = PLAQUE, B = plaqueY(880), cx = PLAQUE.width / 2;
-  const notch = logoPx(50), tab = logoPx(112), drop = plaqueY(945) - B, round = logoPx(14);
+  const { left: L, right: R, top: T } = PLAQUE, B = plaqueY(877.5), cx = PLAQUE.width / 2, notch = logoPx(47);
   const path = new Path2D();
   path.moveTo(L + notch, T);
   path.lineTo(R - notch, T);
   path.arc(R, T, notch, Math.PI, Math.PI / 2, true);
   path.lineTo(R, B - notch);
   path.arc(R, B, notch, -Math.PI / 2, -Math.PI, true);
-  path.lineTo(cx + tab + round, B);
-  path.arcTo(cx + tab, B, cx + tab, B + drop, round);
-  path.bezierCurveTo(cx + tab, B + drop * .5, cx + tab * .42, B + drop * .9, cx, B + drop);
-  path.bezierCurveTo(cx - tab * .42, B + drop * .9, cx - tab, B + drop * .5, cx - tab, B + round);
-  path.arcTo(cx - tab, B, cx - tab - round, B, round);
+  // The measured profile, smoothed by running quadratic curves through the midpoints between samples.
+  const side = (sign: number) => {
+    const points = (sign > 0 ? TAB_PROFILE : [...TAB_PROFILE].reverse()).map(([dx, depth]) => [cx + sign * logoPx(dx), B + logoPx(depth)] as const);
+    path.lineTo(...points[0]);
+    for (let k = 1; k < points.length - 1; k++) path.quadraticCurveTo(points[k][0], points[k][1], (points[k][0] + points[k + 1][0]) / 2, (points[k][1] + points[k + 1][1]) / 2);
+    path.lineTo(...points[points.length - 1]);
+  };
+  side(1); side(-1);
   path.lineTo(L + notch, B);
   path.arc(L, B, notch, 0, -Math.PI / 2, true);
   path.lineTo(L, T + notch);
@@ -373,7 +409,9 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
   const body = layer(c.canvas);
   const plate = body.c.createLinearGradient(0, T, 0, H);
   plate.addColorStop(0, '#1b1b18'); plate.addColorStop(.5, '#0f100e'); plate.addColorStop(1, '#090a09');
-  body.c.fillStyle = plate; body.c.fill(outline);
+  // Soft drop shadow under the plate, as in the logo.
+  body.c.save(); body.c.shadowColor = 'rgba(0,0,0,.55)'; body.c.shadowBlur = logoPx(14); body.c.shadowOffsetY = logoPx(5);
+  body.c.fillStyle = plate; body.c.fill(outline); body.c.restore();
   const pot = POT.halfWidth * PLAQUE_PX;
   softWindow(body.c, cx, pot - logoPx(26), logoPx(18), 0, plaqueY(652), plaqueY(700));
   stamp(c, body.canvas);
@@ -404,31 +442,48 @@ function paintPlaque(c: CanvasRenderingContext2D, border: Border) {
   const gold = (y0: number, y1: number, pale = false) => { const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, pale ? '#F7EAD0' : '#F4E2B8'); g.addColorStop(.5, pale ? '#DFC498' : '#D8B276'); g.addColorStop(1, pale ? '#A8844F' : '#946C38'); return g; };
   const serif = (size: number) => `600 ${size}px "Cormorant Garamond", Georgia, serif`;
   const capRatio = (size: number) => { c.font = serif(size); return (c.measureText('BONSAI').actualBoundingBoxAscent || size * .63) / size; };
-  // "BONSAI" on the pot face: cap height and width as in the logo (rows 618–662, columns 577–945).
+  // "BONSAI" on the pot face: cap height and width as in the logo (rows 617–664, columns 579–945).
   {
-    const cap = plaqueY(662) - plaqueY(618), size = cap / capRatio(200), span = logoPx(945 - 577);
+    const cap = plaqueY(664) - plaqueY(617), size = cap / capRatio(200), span = logoPx(945 - 579);
     c.font = serif(size);
     const widths = [...'BONSAI'].map(ch => c.measureText(ch).width), spacing = (span - widths.reduce((a, b) => a + b, 0)) / 5;
-    let x = cx - span / 2; const baseline = plaqueY(662);
+    let x = cx - span / 2; const baseline = plaqueY(664);
     c.textBaseline = 'alphabetic';
     c.fillStyle = 'rgba(0,0,0,.55)'; [...'BONSAI'].forEach((ch, i) => { c.fillText(ch, x + 3, baseline + 4); x += widths[i] + spacing; });
     x = cx - span / 2; c.fillStyle = gold(baseline - cap, baseline, true);
     [...'BONSAI'].forEach((ch, i) => { c.fillText(ch, x, baseline); x += widths[i] + spacing; });
   }
-  // "DANIEL BOURSCHEID": tall and condensed (rows 700–795, columns 300–1225), always inside the inner border.
+  // "DANIEL BOURSCHEID": tall and condensed (rows 698–796, columns 298–1222), always inside the inner border.
   {
-    const cap = plaqueY(795) - plaqueY(700), size = cap / capRatio(200), inset = border.outer + border.gap + border.inner;
+    const cap = plaqueY(796) - plaqueY(698), size = cap / capRatio(200), inset = border.outer + border.gap + border.inner;
     c.font = serif(size);
     const natural = c.measureText('DANIEL BOURSCHEID').width, room = PLAQUE.right - PLAQUE.left - 2 * (inset + logoPx(30));
-    const scaleX = Math.min(logoPx(1225 - 300), room) / natural, baseline = plaqueY(795);
+    const scaleX = Math.min(logoPx(1222 - 298), room) / natural, baseline = plaqueY(796);
     c.save(); c.translate(cx, 0); c.scale(scaleX, 1); c.textAlign = 'center';
     c.fillStyle = 'rgba(0,0,0,.65)'; c.fillText('DANIEL BOURSCHEID', 5, baseline + 7);
     c.fillStyle = gold(baseline - cap, baseline); c.fillText('DANIEL BOURSCHEID', 0, baseline);
     c.restore();
   }
-  // Red maple leaf over the tab (rows 820–918).
-  const leaf = (plaqueY(918) - plaqueY(820)) / 64;
-  c.save(); c.translate(cx, plaqueY(820) + 35 * leaf); c.scale(leaf, leaf); c.fillStyle = '#D9232E'; c.fill(new Path2D(acerOutline)); c.restore();
+  // The logo's red maple leaf (traced from the logo), top tip on row 816.4, with stem, veins and a light rim.
+  {
+    const unit = logoPx(1), blade = new Path2D(plateLeafOutline);
+    c.save(); c.translate(cx, plaqueY(816.4)); c.scale(unit, unit);
+    const stem = new Path2D('M-1.2 70 L2.2 70 L1 97.5 Q.5 100 0 100 Q-.6 100 -.8 97.5 Z');
+    c.shadowColor = 'rgba(0,0,0,.65)'; c.shadowBlur = 3 * unit; c.shadowOffsetX = .8 * unit; c.shadowOffsetY = 1.6 * unit;
+    c.fillStyle = '#C8181B'; c.fill(stem);
+    const fill = c.createRadialGradient(1, 60, 4, 1, 50, 52);
+    fill.addColorStop(0, '#B81317'); fill.addColorStop(.7, '#CC1A1C'); fill.addColorStop(1, '#DA2A26');
+    c.fillStyle = fill; c.fill(blade);
+    c.shadowColor = 'transparent';
+    c.save(); c.clip(blade);
+    c.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of plateLeafVeins) {
+      c.strokeStyle = 'rgba(70,0,4,.7)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+      c.strokeStyle = 'rgba(255,125,110,.4)'; c.lineWidth = .8; c.beginPath(); c.moveTo(x0 + .9, y0); c.lineTo(x1 + .9, y1); c.stroke();
+    }
+    c.strokeStyle = 'rgba(255,105,90,.5)'; c.lineWidth = 1.6; c.stroke(blade);
+    c.restore(); c.restore();
+  }
 }
 
 // Built in steps that yield to the browser in between, so a slow phone keeps scrolling while the scene is made.
@@ -506,54 +561,71 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   const tree = new THREE.Group(); tree.position.y = soilY; world.add(tree);
   const barkNoise = noise2(23);
   const barkMaps = keep(surfaceMaps(THREE, texel, 6, (u, v) => {
-    // Long fibrous strands that wander as they run along the wood, split by narrow dark cracks, plus fine grain.
-    const warp = barkNoise(u * 3, v * 2, 3, 2, 2) - .5, wander = barkNoise(u * 8, v * 3, 8, 3, 2);
-    const coarse = Math.abs(Math.sin((u + warp * .2) * Math.PI * 12 + wander * 3.4));
-    const fine = Math.abs(Math.sin((u + warp * .12) * Math.PI * 30 + wander * 5.5 + warp * 3));
-    const grain = barkNoise(u * 96, v * 18, 96, 18, 1), patch = barkNoise(u * 5, v * 3, 5, 3, 2);
-    const h = Math.pow(coarse, .35) * .62 + Math.pow(fine, .7) * .26 + grain * .12;
-    const light = Math.min(1, Math.max(0, h)) ** 2.4 * (.7 + patch * .6);
-    // Crack: dark brown; strand: warm grey-brown; crest: pale silver-tan, as on the logo trunk.
-    return { h, r: 34 + light * 175 + grain * 14, g: 24 + light * 150 + grain * 12, b: 16 + light * 112 + grain * 10 };
+    // Long, wavy ridges stretched along the wood (ridged noise, warped so they wander and merge), split by dark
+    // cracks, with fine grain: the carved look of the logo's trunk.
+    const warp = barkNoise(u * 3, v * 2, 3, 2, 2) - .5;
+    const ridge = 1 - Math.abs(2 * barkNoise(u * 18 + warp * 3, v * 2, 18, 2, 3) - 1);
+    const fine = 1 - Math.abs(2 * barkNoise(u * 44 + warp * 6, v * 3, 44, 3, 2) - 1);
+    const grain = barkNoise(u * 96, v * 18, 96, 18, 1);
+    const h = ridge ** 3 * .62 + fine ** 3 * .28 + grain * .1;
+    // Ramp: near-black brown in the cracks, warm brown on the flanks, pale cream on the crests.
+    const t = Math.min(1, Math.max(0, h * 1.3)), dark = [18, 11, 6], mid = [112, 78, 48], pale = [226, 204, 166];
+    const mix = (k: number) => t < .5 ? dark[k] + (mid[k] - dark[k]) * t * 2 : mid[k] + (pale[k] - mid[k]) * (t - .5) * 2;
+    return { h, r: mix(0) + grain * 10, g: mix(1) + grain * 8, b: mix(2) + grain * 6 };
   }));
-  const bark = new THREE.MeshStandardMaterial({ map: barkMaps.map, normalMap: barkMaps.normalMap, normalScale: new THREE.Vector2(1.6, 1.6), vertexColors: true, roughness: .92 });
+  // Little environment fill, so the side away from the key light falls into deep shadow as in the logo; no fog,
+  // which would tint the warm browns green.
+  const bark = new THREE.MeshStandardMaterial({ map: barkMaps.map, normalMap: barkMaps.normalMap, normalScale: new THREE.Vector2(2, 2), vertexColors: true, roughness: .55, envMapIntensity: .22, fog: false });
+  // Logo-like modelling of the wood: little ambient fill and a stronger key light, so each strand gets a bright
+  // crest on the lit side and falls into dark brown on the other.
+  // The silhouette edges darken too, which rounds every strand and root like the logo's shading.
+  bark.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <aomap_fragment>', 'reflectedLight.indirectDiffuse *= .4;\nreflectedLight.directDiffuse *= 1.35;\n#include <aomap_fragment>')
+      .replace('#include <opaque_fragment>', 'outgoingLight *= mix(.28, 1., smoothstep(.05, .7, abs(dot(normalize(normal), normalize(vViewPosition)))));\n#include <opaque_fragment>');
+  };
   await pause();
   const limbs: T.BufferGeometry[] = [];
   const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
   // Nebari: surface roots around the trunk, longest to the left and right as in the logo. [angle, reach, thickness]
   const rootSpec: [number, number, number][] = [
-    [-.08, 1.65, .15], [.3, 1.45, .16], [.72, 1.05, .13], [1.18, .75, .12], [1.62, .72, .13], [2.08, .95, .14], [2.5, 1.35, .16],
-    [2.95, 1.6, .15], [3.35, 1.45, .12], [3.9, 1.1, .12], [4.6, .8, .11], [5.3, 1.1, .12], [5.85, 1.4, .12],
+    [-.1, 1.65, .17], [.38, 1.4, .17], [.95, .95, .15], [1.5, .72, .16], [2.05, .95, .15], [2.6, 1.4, .18],
+    [3.1, 1.65, .17], [3.75, 1.2, .14], [4.65, .8, .13], [5.5, 1.2, .14],
   ];
-  const trunkTwist = (h: number) => .55 * Math.max(h, 0);
+  // The strands turn one way low on the trunk and the other way higher up, which draws the logo's S in the wood.
+  const trunkTwist = (h: number) => { const y = Math.max(h, 0); return .9 * y + .55 * Math.sin(y * 2.4); };
   // Buttresses: one per root, strong at the base and fading into the trunk; below the soil everything shrinks.
   const sunk = (h: number) => h < 0 ? Math.max(0, 1 + h * 4) : 1;
   // Narrow and tall at the base, so the flare reads as separate roots with dark gaps between them, not a cone.
   const flutes: Flute[] = rootSpec.map(([angle, , thick]) => ({ angle, width: .11, drift: .3, amp: (_t, p) => (.05 + 3.2 * thick * Math.exp(-Math.max(p.y, 0) / .3)) * (1 - smooth(1.5, 2.2, p.y)) * sunk(p.y) }));
   // Strands: many narrow ridges that wander along the trunk, as in the logo's twisted, deeply furrowed wood.
-  for (let k = 0; k < 13; k++) {
-    const amp = .05 + rand() * .08, width = .09 + rand() * .1;
-    flutes.push({ angle: k / 13 * Math.PI * 2 + (rand() - .5) * .3, width, drift: (rand() - .5) * 1.6, amp: (_t, p) => amp * (1 - smooth(1.8, 2.2, p.y)) });
+  for (let k = 0; k < 9; k++) {
+    const amp = .12 + rand() * .1, width = .11 + rand() * .08;
+    flutes.push({ angle: k / 9 * Math.PI * 2 + (rand() - .5) * .3, width, drift: (rand() - .5) * 1.6, amp: (_t, p) => amp * (1 - smooth(1.8, 2.2, p.y)) });
   }
-  // Centre line traced from the logo: a gentle S that bends left above mid-height and back over the base.
-  const trunk = new THREE.CatmullRomCurve3([new V(.06, -.25, 0), new V(.06, .2, .03), new V(.02, .5, .05), new V(-.02, .8, 0), new V(0, 1.05, -.03), new V(-.13, 1.3, .04), new V(-.19, 1.5, .02), new V(-.12, 1.72, -.03), new V(0, 1.95, 0), new V(.02, 2.2, 0)], false, 'centripetal');
+  // Centre line traced from the logo (middle of the trunk's silhouette row by row): the base sits right of the axis,
+  // the trunk leans left as it rises and turns back right at the top, an S.
+  const trunk = new THREE.CatmullRomCurve3([new V(.17, -.25, .02), new V(.18, .1, .02), new V(.19, .4, .04), new V(.17, .62, .03), new V(.08, .86, 0), new V(-.04, 1.09, -.02), new V(-.12, 1.31, .02), new V(-.17, 1.53, .03), new V(-.1, 1.68, 0), new V(.07, 1.84, -.03), new V(.13, 2, 0), new V(.12, 2.2, 0)], false, 'centripetal');
+  const trunkAt = (h: number) => { let lo = 0, hi = 1; for (let k = 0; k < 24; k++) { const mid = (lo + hi) / 2; if (trunk.getPoint(mid).y < h) lo = mid; else hi = mid; } return trunk.getPoint(lo); };
   // Strong flare from mid-height down into the roots, as in the logo.
-  const trunkRadius = (h: number) => (.18 + .06 * Math.max(0, 1 - h / 2.2) + .16 * Math.exp(-Math.max(h, 0) / .35)) * (1 - .35 * smooth(1.8, 2.25, h)) * (h < 0 ? Math.max(.45, 1 + h * 2.2) : 1);
-  limbs.push(barkTube(THREE, trunk, compact ? 90 : 150, compact ? 40 : 72, { radius: (_t, p) => trunkRadius(p.y), flutes, twist: (_t, p) => trunkTwist(p.y), lumps: .05, seed: 31, tone: .8 }));
+  // Strong flare into the roots, a steady column through the lean and a clear taper where it splits at the top.
+  const trunkRadius = (h: number) => (.17 + .07 * Math.max(0, 1 - h / 2.2) + .16 * Math.exp(-Math.max(h, 0) / .35)) * (1 - .5 * smooth(1.45, 2.1, h)) * (h < 0 ? Math.max(.45, 1 + h * 2.2) : 1);
+  limbs.push(barkTube(THREE, trunk, compact ? 90 : 150, compact ? 40 : 72, { radius: (_t, p) => trunkRadius(p.y), flutes, twist: (_t, p) => trunkTwist(p.y), lumps: .05, seed: 31, tone: .78, occlusion: (_t, p) => .78 + .22 * smooth(-.05, .5, p.y) }));
 
   await pause();
-  const up = new V(0, 1, 0);
+  const up = new V(0, 1, 0), trunkBase = trunkAt(.3).setY(0);
   rootSpec.forEach(([angle, wanted, thick], i) => {
     const dir = new V(Math.cos(angle), 0, Math.sin(angle)), side = new V(-Math.sin(angle), 0, Math.cos(angle)), wobble = (rand() - .5) * 2;
     const reach = Math.min(wanted, superRadius(soilA - .08, soilB - .06, potShape.e, angle) - .04);
-    const at = (r: number, lift: number, lateral: number) => { const point = dir.clone().multiplyScalar(r).addScaledVector(side, lateral); return point.setY(soilHeight(point.x, point.z) - soilY + lift); };
+    // Near the trunk the roots start from its base (right of the axis), farther out they spread around the pot.
+    const at = (r: number, lift: number, lateral: number) => { const point = dir.clone().multiplyScalar(r).addScaledVector(side, lateral).addScaledVector(trunkBase, Math.max(0, 1 - r)); return point.setY(soilHeight(point.x, point.z) - soilY + lift); };
     // Roots leave the trunk high up, drop steeply, then snake over the moss in low arches out to the rim.
     const span = reach - .52, hump = .08 + rand() * .1;
-    const curve = new THREE.CatmullRomCurve3([at(.05, .9, 0), at(.27, .52, wobble * .03), at(.52, .27, wobble * .08), at(.52 + span * .3, .1 + hump, wobble * .16), at(.52 + span * .58, .06, -wobble * .06), at(.52 + span * .82, .06 + hump * .5, -wobble * .14), at(reach, -.03, wobble * .04)], false, 'centripetal');
+    const curve = new THREE.CatmullRomCurve3([at(.05, .62, 0), at(.27, .38, wobble * .03), at(.52, .22, wobble * .08), at(.52 + span * .3, .1 + hump, wobble * .16), at(.52 + span * .58, .06, -wobble * .06), at(.52 + span * .82, .06 + hump * .5, -wobble * .14), at(reach, -.03, wobble * .04)], false, 'centripetal');
     limbs.push(barkTube(THREE, curve, compact ? 34 : 56, compact ? 12 : 18, {
-      radius: t => thick * (1.3 * Math.pow(1 - t, 1.2) + .3), flatten: .9, up,
-      flutes: [{ angle: -.5, width: .28, amp: () => .1, drift: .6 }, { angle: .55, width: .28, amp: () => .08, drift: -.5 }], twist: t => t * .8, lumps: .08, seed: 40 + i, tone: .82,
+      radius: t => thick * (1.05 * Math.pow(1 - t, 1.2) + .3), flatten: .9, up,
+      flutes: [{ angle: -.5, width: .28, amp: () => .1, drift: .6 }, { angle: .55, width: .28, amp: () => .08, drift: -.5 }], twist: t => t * .8, lumps: .08, seed: 40 + i, tone: .9, underside: .6,
     }));
     // A side root forks off most main roots.
     if (reach > .8 && rand() < .75) {
@@ -561,7 +633,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
       const toward = dir.clone().applyAxisAngle(up, turn);
       const ground = (point: T.Vector3, lift: number) => point.setY(soilHeight(point.x, point.z) - soilY + lift);
       const fork = new THREE.CatmullRomCurve3([start.clone().setY(start.y + .01), ground(start.clone().addScaledVector(toward, length * .5), .03), ground(start.clone().addScaledVector(toward, length), -.03)], false, 'centripetal');
-      limbs.push(barkTube(THREE, fork, 16, 10, { radius: t => thick * .5 * (1 - t * .75), flatten: .78, up, lumps: .08, seed: 70 + i, tone: .92 }));
+      limbs.push(barkTube(THREE, fork, 16, 10, { radius: t => thick * .5 * (1 - t * .75), flatten: .78, up, lumps: .08, seed: 70 + i, tone: .9, underside: .6 }));
     }
   });
 
@@ -581,11 +653,11 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
 
   // Canopy as in the logo: a rounded triangular mound (peak slightly left of the trunk, sides falling diagonally,
   // right side longer and lower), built from overlapping tufts in layers. The underside stays open near the trunk.
-  const mound = { peakX: .1, peakY: 2.58, base: 1.15, left: 2.2, right: 2.25, depth: 1.3 };
+  const mound = { peakX: .1, peakY: 2.48, base: 1.15, left: 2.4, right: 2.45, depth: 1.3 };
   const side = (x: number) => Math.min(1, Math.abs(x - mound.peakX) / (x < mound.peakX ? mound.left : mound.right));
-  const crownTop = (x: number) => mound.base + (mound.peakY - mound.base) * (1 - Math.pow(side(x), x < mound.peakX ? 1.74 : 1.05));
+  const crownTop = (x: number) => mound.base + (mound.peakY - mound.base) * (1 - Math.pow(side(x), x < mound.peakX ? 1.6 : .75));
   // Nearly level underneath, opening up only around the trunk so the main branches show as in the logo.
-  const underside = (x: number) => mound.base + .72 * Math.exp(-((x - mound.peakX + .1) ** 2) / (2 * .38 * .38));
+  const underside = (x: number) => mound.base + .85 * Math.exp(-((x - mound.peakX + .05) ** 2) / (2 * .4 * .4));
   const clusters: { center: T.Vector3; normal: T.Vector3; inner: boolean }[] = [];
   const tuftCount = compact ? 90 : 150;
   const core = new V(mound.peakX, (mound.base + mound.peakY) / 2 - .2, 0);
@@ -594,6 +666,8 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     if (top - bottom < .25) continue;
     const y = bottom + Math.pow(rand(), .6) * (top - bottom), depth = mound.depth * Math.sqrt(Math.max(.05, 1 - side(x) ** 2)) * (.45 + .55 * (y - bottom) / (top - bottom));
     const z = (rand() * 2 - 1) * depth;
+    // Nothing hangs in front of the trunk's upper half: in the logo the trunk shows whole up to where it splits.
+    if (z > .1 && Math.abs(x - .02) < .5 && y < 1.95) continue;
     // Outer layer hugs the surface; one in four tufts sits deeper to fill the volume.
     const inner = clusters.length % 4 === 3;
     const center = new V(x, y, z);
@@ -612,15 +686,16 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     [[[.03, 1.58, 0], [.45, 1.68, .12], [.9, 1.66, 0], [1.3, 1.52, -.12]], .085],
     [[[0, 1.95, 0], [-.05, 2.15, .05], [-.08, 2.3, 0]], .12],
     [[[.02, 1.95, 0], [.4, 2.05, .1], [.7, 2.1, 0]], .08],
-    [[[.02, 1.95, .08], [.15, 2.12, .55], [.05, 2.3, .9]], .07],
     [[[-.04, 1.55, -.08], [-.25, 1.82, -.6], [-.35, 2.05, -.9]], .075],
     [[[-.08, 1.05, .1], [-.5, 1.2, .45], [-.95, 1.55, .62]], .065],
   ];
   const primaries: { curve: T.CatmullRomCurve3; radius: (u: number) => number }[] = [];
   branchSpec.forEach(([points, r0], i) => {
-    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new V(x, y, z)), false, 'centripetal'), radius = (u: number) => r0 * (1.25 - u * 1.15);
+    // The first point moves onto the trunk's centre line at that height, so each limb grows out of the S.
+    const start = trunkAt(points[0][1]), shift = new V(start.x - points[0][0], 0, start.z - points[0][2]);
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z], k) => new V(x, y, z).addScaledVector(shift, Math.max(0, 1 - k * .4))), false, 'centripetal'), radius = (u: number) => r0 * (1.25 - u * 1.15);
     primaries.push({ curve, radius });
-    limbs.push(barkTube(THREE, curve, compact ? 22 : 34, compact ? 12 : 18, { radius: t => radius(t), flutes: [{ angle: .8, width: .4, amp: () => .12 }, { angle: 3.3, width: .4, amp: () => .1 }], twist: t => t * 1.4, lumps: .08, up, seed: 90 + i, tone: 1 }));
+    limbs.push(barkTube(THREE, curve, compact ? 22 : 34, compact ? 12 : 18, { radius: t => radius(t), flutes: [{ angle: .8, width: .4, amp: () => .12 }, { angle: 3.3, width: .4, amp: () => .1 }], twist: t => t * 1.4, lumps: .08, up, seed: 90 + i, tone: .95, underside: .45 }));
     // Secondary branches climb from each limb into the crown, alternating sides, with a kink like real wood.
     for (const [k, at] of (compact ? [.4, .75] : [.32, .52, .7, .88]).entries()) {
       const start = curve.getPointAt(at), heading = curve.getTangentAt(at), out = new V(heading.x, 0, heading.z).normalize(), across = new V(-out.z, 0, out.x).multiplyScalar(k % 2 ? 1 : -1);
@@ -650,7 +725,8 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // revealed in a wave on entrance and moved by a light breeze in the vertex shader.
   const leafMap = leafTexture(THREE, compact ? 128 : 256); textures.push(leafMap);
   const leafShape = leafGeometry(THREE);
-  const perOuter = compact ? 19 : 26, perInner = compact ? 12 : 17;
+  // Fewer, larger leaves of varied sizes, so single leaves read clearly as in the logo.
+  const perOuter = compact ? 9 : 12, perInner = compact ? 5 : 7;
   const count = clusters.reduce((sum, cluster) => sum + (cluster.inner ? perInner : perOuter), 0);
   const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 } };
   const delays = new Float32Array(count);
@@ -669,13 +745,15 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
 #endif`);
   };
   // Leaves skip tone mapping: ACES pushes saturated reds toward salmon/pink; the logo red must stay pure.
-  const leafMaterial = new THREE.MeshStandardMaterial({ map: leafMap, alphaTest: .5, side: THREE.DoubleSide, roughness: .85, metalness: 0, toneMapped: false });
+  const leafMaterial = new THREE.MeshStandardMaterial({ map: leafMap, alphaTest: .5, side: THREE.DoubleSide, roughness: .85, metalness: 0, toneMapped: false, fog: false });
   const glow = { value: theme === 'dark' ? .48 : .3 };
   leafMaterial.onBeforeCompile = shader => {
     patch(shader);
     shader.uniforms.uGlow = glow;
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uGlow;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat facing = abs(dot(normalize(normal), normalize(vViewPosition)));\ntotalEmissiveRadiance += diffuseColor.rgb * uGlow * (.5 + pow(1. - facing, 2.));')
       // Scale bright texels down as a whole instead of clipping each channel, so lit leaves stay pure red, not coral.
+      // Almost no white reflection, which would wash the red toward coral.
+      .replace('#include <aomap_fragment>', 'reflectedLight.directSpecular *= .15;\nreflectedLight.indirectSpecular *= .1;\n#include <aomap_fragment>')
       .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb /= max(1., max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b)));\n#include <tonemapping_fragment>');
   };
   const leafDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: leafMap, alphaTest: .5 });
@@ -692,12 +770,12 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   for (const cluster of clusters) for (let k = 0, n = cluster.inner ? perInner : perOuter; k < n; k++) {
     // Dense in the middle of each tuft, looser at its edges.
     position.set(gauss() * .34, gauss() * .22, gauss() * .34).add(cluster.center);
-    normal.copy(cluster.normal).multiplyScalar(.9).add(new V(0, .5, 0)).add(new V((rand() - .5) * .9, (rand() - .5) * .5, (rand() - .5) * .9)).normalize();
-    if (normal.dot(toViewer) < .3 && normal.dot(toViewer) > -.3) normal.lerp(toViewer, .55).normalize();
+    // Mostly turned toward the viewer, so each leaf shows its full star shape.
+    normal.copy(cluster.normal).multiplyScalar(.9).add(new V(0, .5, 0)).add(new V((rand() - .5) * .9, (rand() - .5) * .5, (rand() - .5) * .9)).normalize().lerp(toViewer, .6).normalize();
     axisY.copy(cluster.normal).add(new V((rand() - .5) * 1.2, .3, (rand() - .5) * 1.2)); axisY.addScaledVector(normal, -axisY.dot(normal)).normalize();
     axisX.crossVectors(axisY, normal).normalize();
     basis.makeBasis(axisX, axisY, normal); quaternion.setFromRotationMatrix(basis);
-    scale.setScalar(cluster.inner ? .41 + rand() * .14 : .46 + rand() * .17);
+    scale.setScalar(cluster.inner ? .34 + rand() * .18 : (.34 + Math.pow(rand(), 1.6) * .34) * (rand() < .1 ? 1.2 : 1));
     foliage.setMatrixAt(index, basis.compose(position, quaternion, scale));
     if (cluster.inner) color.copy(deep[Math.floor(rand() * deep.length)]);
     else {
@@ -747,7 +825,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
   });
   arch.add(new THREE.Mesh(bandGeometry, bandMaterial));
-  const plaqueWidth = PLAQUE.width / PLAQUE_PX, plaqueHeight = PLAQUE.height / PLAQUE_PX, planeTop = logoY(620) + PLAQUE.top / PLAQUE_PX;
+  const plaqueWidth = PLAQUE.width / PLAQUE_PX;
   // Phones show the plate at a few hundred pixels: a smaller canvas paints much faster and looks the same.
   const plaqueCanvas = document.createElement('canvas'), plaqueScale = compact ? .6 : 1;
   plaqueCanvas.width = Math.round(PLAQUE.width * plaqueScale); plaqueCanvas.height = Math.round(PLAQUE.height * plaqueScale);
@@ -764,7 +842,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   document.fonts?.load('600 100px "Cormorant Garamond"').then(() => { if (disposed) return; repaintPlaque(); if (reduced || !frame) render(0); }).catch(() => {});
   const plaqueMaterial = new THREE.MeshBasicMaterial({ map: plaqueTexture, transparent: true, toneMapped: false, fog: false });
   const plaque = new THREE.Group(); rig.add(plaque);
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(plaqueWidth, plaqueHeight), plaqueMaterial); plate.position.y = planeTop - plaqueHeight / 2; plaque.add(plate);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(plaqueWidth, PLANE_HEIGHT), plaqueMaterial); plate.position.y = PLANE_TOP - PLANE_HEIGHT / 2; plaque.add(plate);
   // Design plane coordinates map to the screen as if at the tree; a homothety from the camera
   // pushes the arch behind the pot and brings the nameplate in front of it.
   const place = (group: T.Object3D, depth: number) => {
@@ -802,8 +880,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   }).catch(() => {});
 
   // ---- Framing, entrance, interaction and loop.
-  const bottom = planeTop - plaqueHeight, top = ARCH.centerY + ARCH.outer + ARCH.outerWidth / 2 + .05;
-  const composition = { centerY: (top + bottom) / 2, halfHeight: (top - bottom) / 2, halfWidth: (PLAQUE.right - PLAQUE.left) / PLAQUE_PX / 2 + .05 };
+  const composition = COMPOSITION;
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   // The entrance runs on wall-clock time, so slow devices still finish it in 1.5 s.
   let frameAverage = 1 / 60, frameCount = 0;
@@ -818,7 +895,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     camera.aspect = aspect;
     const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     // The composition is the hero's cover: centred and as large as the stage allows.
-    const distance = Math.max(composition.halfHeight / (tan * .93 * stageShare), composition.halfWidth / (tan * aspect * .94));
+    const distance = Math.max(composition.halfHeight / (tan * FIT.height * stageShare), composition.halfWidth / (tan * aspect * FIT.width));
     const lookY = composition.centerY - (.5 - stageCenter) * 2 * tan * distance;
     const plaquePixels = plaqueWidth / (2 * tan * distance * aspect) * width, perPixel = PLAQUE.width / Math.max(plaquePixels, 1);
     // Half-pixel steps, so small viewport changes (a phone's address bar) do not repaint the plate.
