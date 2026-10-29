@@ -28,6 +28,9 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
   // ?debug3d in the URL lists each start-up step and any error in a panel on the page (for phones without a
   // console). The panel is plain DOM so it stays when the hero falls back and this component unmounts.
   const panel = debug ? document.querySelector('.debug-3d') ?? document.body.appendChild(Object.assign(document.createElement('pre'), { className: 'debug-3d', textContent: `Diagnóstico do 3D\n${navigator.userAgent}` })) : null;
+  // The GPU may drop the context (low memory on phones): report it.
+  const lost = () => log('a placa de vídeo descartou o 3D (contexto WebGL perdido)');
+  ref.current?.addEventListener('webglcontextlost', lost);
   const log = (step: string) => { const line = `${((performance.now() - started) / 1000).toFixed(1)} s · ${step}`; console.info('[3D]', line); if (panel) panel.textContent += `\n${line}`; };
   const describe = (error: unknown) => error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   const uncaught = (event: ErrorEvent | PromiseRejectionEvent) => log(`erro: ${describe('reason' in event ? event.reason : event.error ?? event.message)}`);
@@ -50,7 +53,7 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
   }).catch(fail);
   const idleSupported = typeof requestIdleCallback === 'function';
   const idle = idleSupported ? requestIdleCallback(begin, { timeout: 1500 }) : window.setTimeout(begin, 300);
-  return () => { cancelled = true; clearTimeout(watchdog); removeEventListener('error', uncaught); removeEventListener('unhandledrejection', uncaught); if (idleSupported) cancelIdleCallback(idle); else clearTimeout(idle); scene.current?.dispose(); scene.current = null; };
+  return () => { cancelled = true; clearTimeout(watchdog); removeEventListener('error', uncaught); removeEventListener('unhandledrejection', uncaught); ref.current?.removeEventListener('webglcontextlost', lost); if (idleSupported) cancelIdleCallback(idle); else clearTimeout(idle); scene.current?.dispose(); scene.current = null; };
  }, []);
  useEffect(() => { themeRef.current = theme; scene.current?.setTheme(theme); }, [theme]);
  return <><canvas id="bonsai-3d-hero" ref={ref} aria-hidden="true" data-poster-aspect={POSTER.aspect.toFixed(4)} /><FallingLeaves source={canopy} /></>;
