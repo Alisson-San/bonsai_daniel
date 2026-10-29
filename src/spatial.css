@@ -167,3 +167,7 @@
 .hero-spatial.is-ready .hero-stage::before,.hero-spatial.is-failed .hero-stage::before{opacity:0}
 /* With motion, the still is only a ghost while the 3D loads: the entrance then draws the emblem over it. */
 @media(prefers-reduced-motion:no-preference){.hero-spatial:not(.is-ready):not(.is-failed) .hero-stage::before{opacity:.22;filter:saturate(.5) blur(1.5px)}.hero-spatial .hero-stage::before{transition:opacity .9s ease-out,filter .9s ease-out}}
+/* The live scene did not start in time: the still shows in full instead of the ghost. */
+.hero-spatial.is-slow:not(.is-ready) .hero-stage::before{opacity:1;filter:none}
+/* ?debug3d */
+.debug-3d{position:fixed;left:8px;right:8px;bottom:8px;z-index:200;max-height:45vh;overflow:auto;margin:0;padding:12px;border-radius:10px;background:#000d;color:#9fe39f;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap}
