@@ -21,7 +21,11 @@ export default function BonsaiHero3D({ theme, onStatus }: { theme: Theme; onStat
   // The scene starts once the page is idle, so text, catalog and photos come first on slow phones.
   const begin = () => loadThree().then(THREE => {
    if (cancelled || !ref.current) return;
-   scene.current = createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, entrance: !still, onFirstFrame: () => status.current('ready'), onCanopy: rect => { canopy.current = rect; } });
+   return createBonsaiScene(THREE, ref.current, { theme: themeRef.current, reduced, entrance: !still, onFirstFrame: () => status.current('ready'), onCanopy: rect => { canopy.current = rect; } }).then(created => {
+    if (cancelled) { created.dispose(); return; }
+    // The theme may have changed while the scene was being built.
+    scene.current = created; created.setTheme(themeRef.current);
+   });
   }).catch(() => { if (!cancelled) status.current('failed'); });
   const idleSupported = typeof requestIdleCallback === 'function';
   const idle = idleSupported ? requestIdleCallback(begin, { timeout: 1500 }) : window.setTimeout(begin, 300);

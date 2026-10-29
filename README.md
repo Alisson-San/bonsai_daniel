@@ -161,15 +161,23 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 
 ## Hero 3D na identidade da logo
 
-Cena só com árvore e vaso (sem base): arco em meia-lua com linha dourada dupla, cujas laterais descem até a borda do vaso e somem em fade atrás dele; copa em cúpula larga e baixa, levemente assimétrica, com folhas palmadas de sete pontas (#D9232E com variações); tronco torcido com sulcos em espiral, cristas claras e fendas escuras; raízes expostas sobre musgo; vaso oval baixo em pedra grafite com uma pequena folha dourada; sombra de contato difusa sob o vaso. Até 15 folhas caem do lado direito da copa. A entrada leva 1,5 s (arco se desenha, vaso aparece, folhas surgem em onda) medida em tempo real; depois, só inclinação de até 8° com o ponteiro e brisa no vertex shader. Movimento reduzido mostra a cena estática. Pixel ratio máximo 2 (1,5 no celular) e menos folhas em telas pequenas.
+A cena é montada sobre as medidas da logo oficial (`public/images/logo_escuro.jpeg`, 1586×992 px): 160 px da logo valem uma unidade da cena, com o eixo vertical da logo (coluna 760) no centro e a borda do vaso (linha 567) como referência (`LOGO`, `logoX` e `logoY` em `src/lib/bonsaiScene.ts`). Por isso arco, vaso, placa e copa caem nas mesmas posições da logo em qualquer tela.
+
+- **Arco:** círculo completo centrado na linha 485 (raio externo de 472 px), com uma linha dourada grossa e uma fina sobre uma faixa escura (sombra suave no tema escuro, contorno preto sólido no tema claro, como nos dois arquivos da logo). O círculo continua curvando abaixo do topo da placa e termina escondido atrás dela. Na entrada, as linhas se desenham a partir do topo.
+- **Vaso como base da placa:** vaso largo de cantos arredondados (colunas 465–1040), em pedra escura com borda mais clara e gasta. A placa fica à frente do vaso e, sobre ele, o preto da placa se dissolve: a face do vaso aparece com "BONSAI" e os filetes dourados ("— BONSAI —") e se funde à placa logo abaixo. O filete externo da placa esmaece ao chegar no vaso.
+- **Tronco:** eixo em S traçado da logo, alargando-se da metade para baixo; a seção é moldada por contrafortes (um por raiz) e por fibras estreitas que se torcem e se separam ao subir, com sulcos escurecidos. Casca com fibras longas, fendas escuras e cristas claras.
+- **Raízes (nebari):** 13 raízes saem alto do tronco, descem e serpenteiam em arcos baixos sobre um montículo de musgo acima da borda do vaso até perto da borda, com algumas ramificações.
+- **Galhos:** dois galhos principais quase horizontais abrem para a esquerda e para a direita sob a copa (como na logo), mais galhos altos, líder e galhos para frente e para trás; cada um com ramos secundários que terminam dentro da folhagem.
+- **Copa:** silhueta conferida coluna a coluna contra a logo (triangular arredondada, base quase plana e aberta só junto ao tronco). Folhas palmadas de sete pontas em vermelho puro amostrado da logo (#E01A18 dominante, tons escuros no interior); o brilho é limitado sem saturar os canais, para o vermelho não virar coral.
+- **Placa:** contorno da logo (cantos com recortes côncavos e aba em escudo), bordas em dourado-bronze, "DANIEL BOURSCHEID" e a folha vermelha nas posições da logo.
+
+A cena é montada em etapas que devolvem a vez ao navegador entre si, para o celular continuar rolando enquanto ela é criada. A entrada leva 1,5 s (arco se desenha, vaso aparece, folhas surgem em onda); depois, só inclinação de até 8° com o ponteiro e brisa no vertex shader. Movimento reduzido mostra a cena estática. Pixel ratio máximo 2 (1,5 no celular), menos detalhe e placa em resolução menor em telas pequenas.
+
+Ao mudar a cena, gere de novo as imagens estáticas do celular (`node scripts/poster.cjs`, veja "Desempenho no celular").
 
 ## Hero como capa
 
-A composição 3D fica centralizada no topo da hero (`.hero-stage`), com o painel da logo ("BONSAI / DANIEL BOURSCHEID" e a folha na aba) desenhado em canvas como um plano à frente do vaso; as laterais do arco terminam atrás dele. O texto de apresentação vem centralizado logo abaixo. O canvas cobre a hero inteira, atrás do texto, para que poucas folhas (12 no desktop, 7 no celular) caiam de toda a copa até o fim da hero. A chamada editável acima do título fica oculta fora da curadoria, porque o painel já mostra a marca.
-
-## Copa em monte (fiel à logo)
-
-A copa é um monte triangular arredondado (pico levemente à esquerda do tronco, laterais em diagonal, lado direito mais baixo), formado por tufos sobrepostos em camadas, densos no centro e soltos nas bordas, com vazios só embaixo para mostrar tronco e galhos. Folhas de bordo de lobos largos; ~4.100 no desktop e ~1.800 no celular, sendo um quarto numa camada interna de vermelho escuro (#7A1016–#9E1820). Cor por posição: #D9232E dominante, topo-esquerda levemente mais claro, base e interior mais escuros. As folhas ignoram o tone mapping para o vermelho não virar salmão. Se os quadros ficarem abaixo de ~40 fps, a resolução cai automaticamente em passos de 0,25 até 1×. As folhas que caem (18 no desktop, 10 no celular) usam o mesmo formato, saem sobretudo do lado direito da copa e ficam numa camada acima do conteúdo, sem capturar o ponteiro.
+A composição 3D fica centralizada no topo da hero (`.hero-stage`). O texto de apresentação vem centralizado logo abaixo. O canvas cobre a hero inteira, atrás do texto, para que poucas folhas (12 no desktop, 7 no celular) caiam de toda a copa até o fim da hero. A chamada editável acima do título fica oculta fora da curadoria, porque a placa já mostra a marca. Se os quadros ficarem abaixo de ~40 fps, a resolução cai automaticamente em passos de 0,25 até 1×. As folhas que caem (18 no desktop, 10 no celular) usam o mesmo formato, saem sobretudo do lado direito da copa e ficam numa camada acima do conteúdo, sem capturar o ponteiro.
 
 ## Padrões visuais (`src/system.css`)
 
