@@ -111,7 +111,7 @@ Revisão independente de código realizada. Sem teste visual automatizado nesta 
 
 Hero em 60vh, com redução adicional em celulares baixos para acomodar filtros. Badges de envio, numeração e suporte; cards com código contrastado, idade, altura, nebari, sol e ações Ver Ficha/Comprar junto ao preço.
 
-Folha de Acer compartilhada entre Canvas e selo SVG com sete lóbulos serrilhados e nervuras. Selo circular com texto animado. Comparador vetorial utiliza uma garrafa ilustrativa de 25 cm, na mesma escala vertical da altura cadastrada; não substitui a foto com a mão.
+Folha de Acer compartilhada entre Canvas e SVG com sete lóbulos serrilhados e nervuras. Comparador vetorial utiliza uma garrafa ilustrativa de 25 cm, na mesma escala vertical da altura cadastrada; não substitui a foto com a mão.
 
 Modal com fotografia original em moldura, enquadramentos animados e indicadores coloridos. Para completar a ficha do segundo exemplar, foi usada inicialmente a mesma orientação de rega fornecida para o primeiro; o texto e os níveis podem ser alterados na curadoria.
 

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight, Hand, Share2, Download, Check, Sun, Sprout, Ruler, ZoomIn, ZoomOut, Images, Camera } from 'lucide-react';
 import Modal from './Modal';
 import RawPhoto from './RawPhoto';
-import AuthenticitySeal from './AuthenticitySeal';
 import ScaleComparator from './ScaleComparator';
 import PlantInline, { type SavePlantField } from './PlantInline';
 import WhatsAppIcon from './WhatsAppIcon';
@@ -51,7 +50,7 @@ export default function PlantDetail({ plant, onClose, onInterest, notify, editin
       <button className="button button-outline full" onClick={() => void share()}><Share2 size={17} />Compartilhar ficha c/ foto</button>
       {!published && <p className="small muted">Cadastro local: compartilhe a foto e os dados. Ainda não há uma ficha pública deste exemplar.</p>}
       {fallback && <div className="share-fallback"><p>Se o dispositivo não enviar arquivos, copie os dados e baixe a foto separadamente.</p>{photo && <button className="text-link" onClick={() => downloadFile(photo, photo.name)}><Download size={16} />Baixar foto</button>}<input aria-label="Dados para compartilhar" readOnly value={publicUrl ? `${shareText} ${publicUrl}` : shareText} onFocus={e => e.target.select()} /></div>}
-      <div className="detail-authenticity"><AuthenticitySeal/><p className="detail-note">Uma árvore única.<br/>Uma nova história para cultivar.</p></div>
+      <div className="detail-authenticity"><p className="detail-note">Uma árvore única.<br/>Uma nova história para cultivar.</p></div>
     </div></div>
   </Modal>;
 }
