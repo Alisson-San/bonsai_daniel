@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#0B1911" />
     <meta name="description" content="Bonsai Daniel Bourscheid. Uma coleção viva, cultivada com tempo, cuidado e propósito. Conheça cada exemplar e sua história." />
     <script>
-      try { const saved = localStorage.getItem('bourscheid-theme'); const theme = saved === 'dark' || saved === 'light' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; if (matchMedia('(max-width: 800px)').matches) { const poster = document.createElement('link'); poster.rel = 'preload'; poster.as = 'image'; poster.href = '/images/hero-poster-' + theme + '.webp'; document.head.appendChild(poster); } } catch { document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      try { const saved = localStorage.getItem('bourscheid-theme'); const theme = saved === 'dark' || saved === 'light' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; const poster = document.createElement('link'); poster.rel = 'preload'; poster.as = 'image'; poster.href = '/images/hero-poster-' + theme + (matchMedia('(max-width: 800px)').matches ? '' : '-large') + '.webp'; document.head.appendChild(poster); } catch { document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
     </script>
-    <title>Bonsai Daniel Bourscheid — Arte viva</title>
+    <title>Bonsai Daniel Bourscheid</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

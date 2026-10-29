@@ -12,10 +12,11 @@ export const initialCatalog: Catalog = {
   species: [],
   settings: {
     heroEyebrow: 'BONSAI DANIEL BOURSCHEID',
-    heroTitle: 'O tempo transforma.\nO cuidado revela.',
-    heroDescription: 'Entre raízes, formas e estações, cada árvore guarda uma história. Encontre o próximo capítulo da sua coleção.',
+    heroTitle: 'Bonsaísta há 15 anos.',
+    heroDescription: 'Diversos cursos, workshops e premiações em eventos e exposições.\nAbaixo, alguns bonsai e pré-bonsai da coleção que estão à venda. A lista é atualizada toda semana.',
     bioTitle: 'Cultivar é aprender\na respeitar o tempo.',
-    bio: 'Um espaço dedicado à arte do bonsai e à beleza que se constrói aos poucos. Conheça os exemplares da coleção de Daniel Bourscheid e acompanhe cada nova possibilidade de cultivo.',
+    // Text pending from Daniel; the paragraph stays hidden while empty.
+    bio: '',
     whatsapp: '', instagram: '', location: '', messageTemplate: defaultTemplate,
   },
   plants: [1, 2].map((n): Plant => ({

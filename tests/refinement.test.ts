@@ -24,3 +24,14 @@ it('atualiza apenas os placeholders originais preservados no IndexedDB', () => {
  assert.equal(upgradeSeed(data).plants[0].preco,null);
  assert.equal(upgradeSeed(data).plants[0].descricao,'Texto personalizado');
 });
+
+it('textos antigos do site salvos no navegador passam aos novos; textos editados ficam', () => {
+ const data = structuredClone(initialCatalog);
+ data.settings.heroTitle = 'O tempo transforma.\nO cuidado revela.';
+ data.settings.bio = 'Um espaço dedicado à arte do bonsai e à beleza que se constrói aos poucos. Conheça os exemplares da coleção de Daniel Bourscheid e acompanhe cada nova possibilidade de cultivo.';
+ data.settings.heroDescription = 'Descrição própria';
+ const upgraded = upgradeSeed(data).settings;
+ assert.equal(upgraded.heroTitle, initialCatalog.settings.heroTitle);
+ assert.equal(upgraded.bio, '');
+ assert.equal(upgraded.heroDescription, 'Descrição própria');
+});

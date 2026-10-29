@@ -14,7 +14,7 @@
 .section-heading h2,.cultivator-copy h2,.contact h2{font-size:var(--fs-h2);line-height:1.1;letter-spacing:-.5px;margin-top:14px}
 .card-heading,.tile-body .card-heading{font-size:var(--fs-h3);line-height:1.15}
 .hero-description,.section-heading>p,.cultivator-copy>p,.contact>p{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--muted)}
-.hero-spatial .hero-description{max-width:600px;margin:18px auto 28px}
+.hero-spatial .hero-description{max-width:600px;margin:18px auto 28px;white-space:pre-line}
 .scientific{font-size:var(--fs-small)}
 .site-header nav{font-size:13px}
 .site-header nav a{color:var(--muted)}
@@ -38,7 +38,6 @@
 .section-heading>p{max-width:360px;text-align:right}
 .catalog-toolbar{padding-top:24px}
 .results-line{font-size:12px;padding:20px 0 28px}
-.collection-note{margin-top:var(--section-y);font-size:22px}
 
 /* ---- Showcase: grid on the container, aligned with heading and toolbar ---- */
 .plant-grid.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:56px 32px;justify-content:stretch;padding-top:0}
@@ -66,7 +65,6 @@
  .plant-grid.tile-grid{gap:48px}
  .cultivator.section-shell{gap:40px}
  .hero-spatial .hero-description{display:block;margin:14px auto 22px}
- .collection-note{font-size:19px}
 }
 
 /* Header: equal side columns, so the nav sits on the page centre (same axis as the hero emblem). */

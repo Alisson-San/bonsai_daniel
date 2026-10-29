@@ -111,7 +111,7 @@ Revisão independente de código realizada. Sem teste visual automatizado nesta 
 
 Hero em 60vh, com redução adicional em celulares baixos para acomodar filtros. Badges de envio, numeração e suporte; cards com código contrastado, idade, altura, nebari, sol e ações Ver Ficha/Comprar junto ao preço.
 
-Folha de Acer compartilhada entre Canvas e selo SVG com sete lóbulos serrilhados e nervuras. Selo circular com texto animado. Comparador vetorial utiliza uma garrafa ilustrativa de 25 cm, na mesma escala vertical da altura cadastrada; não substitui a foto com a mão.
+Folha de Acer compartilhada entre Canvas e SVG com sete lóbulos serrilhados e nervuras. Comparador vetorial utiliza uma garrafa ilustrativa de 25 cm, na mesma escala vertical da altura cadastrada; não substitui a foto com a mão.
 
 Modal com fotografia original em moldura, enquadramentos animados e indicadores coloridos. Para completar a ficha do segundo exemplar, foi usada inicialmente a mesma orientação de rega fornecida para o primeiro; o texto e os níveis podem ser alterados na curadoria.
 
@@ -139,7 +139,7 @@ Verificado em Chromium headless (WebGL por SwiftShader), em 1440×900 e 390×844
 ## Desempenho no celular
 
 - **Página pré-renderizada:** `npm run build` gera o HTML da página inicial (`src/entry-server.tsx` + `scripts/prerender.mjs`). Texto, catálogo e fotos aparecem antes do JavaScript; depois o app assume a página.
-- **Imagem estática do hero:** em telas até 800px, `public/images/hero-poster-{dark,light}.webp` mostra a cena 3D pronta no primeiro quadro; a cena ao vivo começa na mesma composição, sem a animação de entrada, e aparece por cima. Ao mudar a cena 3D, gere de novo: `npm run build && npm run preview` e, em outro terminal, `node scripts/poster.cjs` (requer Playwright com Chromium e ImageMagick).
+- **Imagem estática do hero (disfarce da espera):** em qualquer tela, `public/images/hero-poster-{dark,light}.webp` (até 800px) ou `hero-poster-{dark,light}-large.webp` (acima) mostra a cena 3D pronta no primeiro quadro, já com folhas caindo da copa; o Three.js começa a baixar na hora e a cena ao vivo, montada quando a página fica ociosa, aparece por cima na mesma composição. A imagem é recortada na mesma caixa que a câmera enquadra (`POSTER` em `src/lib/bonsaiScene.ts`), então `background-size: contain` a alinha com a cena em qualquer tamanho. Ao mudar a cena 3D, gere de novo: `npm run build && npm run preview` e, em outro terminal, `node scripts/poster.cjs` (requer Playwright com Chromium e ImageMagick).
 - O 3D só começa com a página ociosa e compila os shaders antes do primeiro quadro, sem travar a rolagem. Fontes do Google carregam sem bloquear a renderização.
 
 ## Revisão visual (container, vitrine com palco, experiência)
@@ -161,15 +161,23 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 
 ## Hero 3D na identidade da logo
 
-Cena só com árvore e vaso (sem base): arco em meia-lua com linha dourada dupla, cujas laterais descem até a borda do vaso e somem em fade atrás dele; copa em cúpula larga e baixa, levemente assimétrica, com folhas palmadas de sete pontas (#D9232E com variações); tronco torcido com sulcos em espiral, cristas claras e fendas escuras; raízes expostas sobre musgo; vaso oval baixo em pedra grafite com uma pequena folha dourada; sombra de contato difusa sob o vaso. Até 15 folhas caem do lado direito da copa. A entrada leva 1,5 s (arco se desenha, vaso aparece, folhas surgem em onda) medida em tempo real; depois, só inclinação de até 8° com o ponteiro e brisa no vertex shader. Movimento reduzido mostra a cena estática. Pixel ratio máximo 2 (1,5 no celular) e menos folhas em telas pequenas.
+A cena é montada sobre as medidas da logo oficial (`public/images/logo_escuro.jpeg`, 1586×992 px): 160 px da logo valem uma unidade da cena, com o eixo vertical da logo (coluna 760) no centro e a borda do vaso (linha 567) como referência (`LOGO`, `logoX` e `logoY` em `src/lib/bonsaiScene.ts`). Por isso arco, vaso, placa e copa caem nas mesmas posições da logo em qualquer tela.
+
+- **Arco:** círculo completo centrado na linha 485 (raio externo de 472 px), com uma linha dourada grossa e uma fina sobre uma faixa escura (sombra suave no tema escuro, contorno preto sólido no tema claro, como nos dois arquivos da logo). O círculo continua curvando abaixo do topo da placa e termina escondido atrás dela.
+- **Vaso como base da placa:** vaso largo de cantos arredondados (colunas 465–1040), em pedra escura com borda mais clara e gasta. A placa fica à frente do vaso e, sobre ele, o preto da placa se dissolve: a face do vaso aparece com "BONSAI" e os filetes dourados ("— BONSAI —") e se funde à placa logo abaixo. O filete externo da placa esmaece ao chegar no vaso.
+- **Tronco:** eixo em S traçado da logo (o meio da silhueta, linha a linha): base à direita do eixo, inclina para a esquerda ao subir e volta à direita no alto. A seção é moldada por contrafortes (um por raiz) e por fibras que giram num sentido embaixo e no outro em cima, reforçando o S. Sombreamento como na ilustração: sulcos quase pretos, flancos marrons e cristas creme (textura de cristas onduladas), pouca luz ambiente e bordas escurecidas que arredondam cada fibra e raiz.
+- **Raízes (nebari):** 10 raízes saem da base do tronco, descem e serpenteiam em arcos baixos sobre um montículo de musgo acima da borda do vaso até perto da borda, com algumas ramificações; o lado de baixo de cada raiz é mais escuro.
+- **Galhos:** dois galhos principais quase horizontais abrem para a esquerda e para a direita sob a copa (como na logo), mais galhos altos, líder e galhos para frente e para trás; cada um com ramos secundários que terminam dentro da folhagem.
+- **Copa:** silhueta conferida coluna a coluna contra a logo (triangular arredondada, base quase plana e aberta só junto ao tronco, que aparece inteiro até os galhos). Folhas de bordo japonês como as da logo: sete lobos em forma de lança (estreitos no centro, largos no meio, ponta longa) com recortes fundos e serrilhado fino, em tamanhos variados e quase todas viradas para quem olha. Luz e sombra como na logo: as folhas do alto e de fora de cada tufo são claras, as de baixo, de dentro e do fundo caem em carmim escuro, e a copa é mais clara no alto à esquerda; cada lobo é claro na nervura e mais escuro nas bordas, com um brilho rosado nas nervuras. As cores seguem a distribuição medida nas folhas da logo (sombras #6F0908, meios-tons #AF1212, brilhos #FA342E), sem puxar para rosa ou cinza.
+- **Placa:** contorno medido na logo (cantos com recortes côncavos e a aba inferior em forma de bacia, medida coluna a coluna, terminando numa pontinha), bordas em dourado-bronze, sombra suave embaixo, "DANIEL BOURSCHEID" nas posições da logo e a folha de bordo vermelha traçada da própria logo, com cabo, nervuras e borda clara.
+
+A cena é montada em etapas que devolvem a vez ao navegador entre si, para a página continuar rolando enquanto ela é criada. Ela começa já composta, sem animação de entrada (que brigaria com a imagem estática); depois, só inclinação de até 8° com o ponteiro e brisa no vertex shader. Movimento reduzido mostra a cena estática. Pixel ratio máximo 2 (1,5 no celular), menos detalhe e placa em resolução menor em telas pequenas.
+
+Ao mudar a cena, gere de novo as imagens estáticas (`node scripts/poster.cjs`, veja "Desempenho no celular").
 
 ## Hero como capa
 
-A composição 3D fica centralizada no topo da hero (`.hero-stage`), com o painel da logo ("BONSAI / DANIEL BOURSCHEID" e a folha na aba) desenhado em canvas como um plano à frente do vaso; as laterais do arco terminam atrás dele. O texto de apresentação vem centralizado logo abaixo. O canvas cobre a hero inteira, atrás do texto, para que poucas folhas (12 no desktop, 7 no celular) caiam de toda a copa até o fim da hero. A chamada editável acima do título fica oculta fora da curadoria, porque o painel já mostra a marca.
-
-## Copa em monte (fiel à logo)
-
-A copa é um monte triangular arredondado (pico levemente à esquerda do tronco, laterais em diagonal, lado direito mais baixo), formado por tufos sobrepostos em camadas, densos no centro e soltos nas bordas, com vazios só embaixo para mostrar tronco e galhos. Folhas de bordo de lobos largos; ~4.100 no desktop e ~1.800 no celular, sendo um quarto numa camada interna de vermelho escuro (#7A1016–#9E1820). Cor por posição: #D9232E dominante, topo-esquerda levemente mais claro, base e interior mais escuros. As folhas ignoram o tone mapping para o vermelho não virar salmão. Se os quadros ficarem abaixo de ~40 fps, a resolução cai automaticamente em passos de 0,25 até 1×. As folhas que caem (18 no desktop, 10 no celular) usam o mesmo formato, saem sobretudo do lado direito da copa e ficam numa camada acima do conteúdo, sem capturar o ponteiro.
+A composição 3D fica centralizada no topo da hero (`.hero-stage`). O texto de apresentação vem centralizado logo abaixo. O canvas cobre a hero inteira, atrás do texto, para que poucas folhas (12 no desktop, 7 no celular) caiam de toda a copa até o fim da hero. A chamada editável acima do título fica oculta fora da curadoria, porque a placa já mostra a marca. Se os quadros ficarem abaixo de ~40 fps, a resolução cai automaticamente em passos de 0,25 até 1×. As folhas que caem (18 no desktop, 10 no celular) usam o mesmo formato, saem sobretudo do lado direito da copa e ficam numa camada acima do conteúdo, sem capturar o ponteiro.
 
 ## Padrões visuais (`src/system.css`)
 
