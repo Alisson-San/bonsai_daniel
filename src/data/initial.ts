@@ -1,4 +1,4 @@
-import { defaultFraming } from '../lib/schema.ts';
+import { defaultBiography, defaultFraming } from '../lib/schema.ts';
 import type { Catalog, Plant } from '../lib/schema.ts';
 
 export const defaultTemplate = 'Olá Daniel! Estava navegando no catálogo e tenho interesse no exemplar: *{nome} - {codigo}* ({especie} - {idade} - Valor: {preco}). Foto de referência: {foto}. Ficha: {link}. Poderia me passar mais detalhes?';
@@ -18,6 +18,7 @@ export const initialCatalog: Catalog = {
     // Text pending from Daniel; the paragraph stays hidden while empty.
     bio: '',
     whatsapp: '', instagram: '', location: '', messageTemplate: defaultTemplate,
+    ...defaultBiography, bioStory: '', bioMilestones: '', bioGallery: [],
   },
   plants: [1, 2].map((n): Plant => ({
     framing: {...defaultFraming}, id: `db-00${n}`, codigo: `#DB-00${n}`, nomePopular: n === 1 ? 'Ficus Microcarpa — Tronco Esculpido' : 'Ficus Retusa — Tronco Duplo',

@@ -5,6 +5,10 @@ export const statuses = ['disponivel', 'reservado', 'vendido'] as const;
 export const statusLabels = { disponivel: 'Disponível', reservado: 'Reservado', vendido: 'Vendido' };
 export const safeImageUrl = (url: string) => /^\/images\/[\w.-]+$/.test(url) || /^https?:\/\//i.test(url) && (() => { try { const u = new URL(url); return !!u.hostname && !u.username && !u.password; } catch { return false; } })() || /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url);
 const shortText = z.string().trim().max(200);
+export const defaultBiography = {
+  bioPageLead: 'Bonsaísta há 15 anos, com diversos cursos, workshops e premiações em eventos e exposições.',
+  bioHighlights: '15 anos | dedicados ao bonsai\nCursos e workshops | estudo e prática constantes\nPremiações | em eventos e exposições',
+};
 const imageSchema = z.object({ id: z.string().min(1), url: z.string().max(12_000_000).refine(safeImageUrl, 'Use uma imagem JPEG, PNG, WebP ou GIF, ou uma URL http(s).'), anguloTag: z.enum(angles), label: shortText.optional(), crop: z.object({ scale: z.number().min(1).max(4), x: z.number().min(0).max(100), y: z.number().min(0).max(100) }).optional() });
 export const stageSchema = z.object({
  enabled:z.boolean(),pedestal:z.enum(['slate','wood','plinth']),offsetY:z.number().min(-15).max(15),scale:z.number().min(.65).max(1.6),cropBottomOffset:z.number().min(0).max(.45),matteStrength:z.number().min(0).max(1),
@@ -33,6 +37,14 @@ export const settingsSchema = z.object({
   heroEyebrow: shortText, heroTitle: shortText, heroDescription: z.string().max(2000),
   bioTitle: shortText, bio: z.string().max(6000), whatsapp: shortText,
   instagram: shortText, location: shortText, messageTemplate: z.string().min(1).max(4000), fotoCultivador: imageUrl.optional(),
+  // Biography page (/biografia). Defaults keep older catalogs and backups valid.
+  bioPageLead: z.string().max(2000).default(defaultBiography.bioPageLead),
+  bioStory: z.string().max(20000).default(''),
+  // One highlight per line: "headline | detail".
+  bioHighlights: z.string().max(2000).default(defaultBiography.bioHighlights),
+  // One milestone per line: "year | title | text".
+  bioMilestones: z.string().max(12000).default(''),
+  bioGallery: z.array(z.object({ id: z.string().min(1), url: imageUrl, legenda: shortText.default('') })).max(24).default([]),
 });
 export const catalogSchema = z.object({
   version: z.literal(1), plants: z.array(plantSchema).max(500), settings: settingsSchema,

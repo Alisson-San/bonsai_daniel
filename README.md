@@ -167,6 +167,26 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 - **Texto:** corpo de 17 px (15 px no celular), títulos maiores e botões de 50 px de altura (`src/system.css`).
 - **Prévia de link:** `index.html` traz as tags Open Graph com `public/images/og-cover.jpg` (1200×630, o logo 3D), usada pelo WhatsApp, Instagram e Facebook. As URLs apontam para `https://bonsaidaniel.vercel.app/`; atualize se o domínio mudar.
 
+## Biografia (`/biografia`)
+
+Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo botão "Conheça a história" na seção O Cultivador e pelo menu. Tem retrato e apresentação, destaques, a história, a trajetória (marcos), uma galeria de eventos, exposições e prêmios e uma chamada para a coleção. Tudo é editado na própria página pelo modo Curadoria; blocos vazios ficam ocultos para os visitantes.
+
+- **Destaques:** um por linha, `título | detalhe`.
+- **História:** parágrafos separados por uma linha em branco; o primeiro aparece em destaque.
+- **Trajetória:** um marco por linha, `ano | título | texto`.
+- **Galeria:** fotos enviadas na Curadoria, com legenda editável.
+
+A navegação entre a página inicial e a biografia é feita no próprio app (com transição de página onde o navegador suporta) e o botão voltar funciona. O build pré-renderiza as duas páginas (`dist/index.html` e `dist/biografia/index.html`, ver `vercel.json`), e o app hidrata o HTML pronto em vez de recriá-lo.
+
+## Abertura e 3D
+
+- **Entrada:** o emblema entra em foco, depois título, texto, botão e benefícios sobem em sequência (`src/system.css`, desativado com movimento reduzido).
+- **Brilho dourado:** logo que a cena aparece e depois a cada 9 s, uma luz percorre o arco e passa pelos filetes e letras douradas da placa.
+- **Rolagem:** ao rolar para fora do topo, a árvore gira até 24° dentro do vaso, mostrando que é 3D; o vaso fica parado como base da placa.
+- **Celular:** em aparelhos Android, inclinar o telefone inclina a árvore (giroscópio); no iPhone fica o giro pela rolagem.
+- **Coleção:** cada foto abre de uma janela menor e assenta de um leve zoom ao entrar na tela.
+- **Ficha:** mais larga, foto fixa enquanto o texto rola e tipografia maior; o comparador de porte com a garrafa saiu (a foto com a mão já mostra a escala).
+
 ## Hero 3D na identidade da logo
 
 A cena é montada sobre as medidas da logo oficial (`public/images/logo_escuro.jpeg`, 1586×992 px): 160 px da logo valem uma unidade da cena, com o eixo vertical da logo (coluna 760) no centro e a borda do vaso (linha 567) como referência (`LOGO`, `logoX` e `logoY` em `src/lib/bonsaiScene.ts`). Por isso arco, vaso, placa e copa caem nas mesmas posições da logo em qualquer tela.

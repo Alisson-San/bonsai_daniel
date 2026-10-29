@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react';
 import { resolveTheme, type Theme } from '../lib/theme';
 const key = 'bourscheid-theme';
+// The first render matches the prerendered page (dark, automatic), so React can hydrate it; the saved choice is read
+// right after. The page's colours are already right before that: the inline script in index.html sets data-theme.
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-  const [preference, setPreference] = useState<string | null>(() => { try { return localStorage.getItem(key); } catch { return null; } });
+  const [theme, setTheme] = useState<Theme>('dark');
+  const [preference, setPreference] = useState<string | null | undefined>(undefined);
   useEffect(() => {
+    if (preference === undefined) {
+      let saved: string | null = null;
+      try { saved = localStorage.getItem(key); } catch { /* storage blocked: follow the system */ }
+      setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+      setPreference(saved);
+      return;
+    }
     const media = matchMedia('(prefers-color-scheme: dark)');
     const apply = () => { const value = resolveTheme(preference, media.matches); setTheme(value); document.documentElement.dataset.theme = value; document.documentElement.style.colorScheme = value; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', value === 'dark' ? '#0A140E' : '#F7F5F0'); };
     apply(); media.addEventListener('change', apply);

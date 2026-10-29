@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight, Hand, Share2, Download, Check, Sun, Sprout, Ruler, ZoomIn, ZoomOut, Images, Camera } from 'lucide-react';
 import Modal from './Modal';
 import RawPhoto from './RawPhoto';
-import ScaleComparator from './ScaleComparator';
 import PlantInline, { type SavePlantField } from './PlantInline';
 import WhatsAppIcon from './WhatsAppIcon';
 import { formatPrice, indicatorsOf, plantLink, publicPlantLink, rawPhotosOf } from '../lib/catalog';
@@ -40,7 +39,6 @@ export default function PlantDetail({ plant, onClose, onInterest, notify, editin
       <p className="raw-photo-caption">{selected.anguloTag === 'Escala Real (Comparação Humana)' ? <><Hand size={15}/>Escala real: a mão do cultivador ao lado do tronco mostra o volume exato da planta.</> : <>{selected.label ?? selected.anguloTag}</>}</p>
       {photos.length > 1 && <div className="thumbnails">{photos.map((img, index) => <button key={img.id} className={selected.id === img.id ? 'selected' : ''} onClick={() => {setImageId(img.id);setZoom(false);}} aria-label={`Foto ${index + 1}: ${img.label??img.anguloTag}`} aria-pressed={selected.id === img.id}><div className="thumbnail-frame"><img src={img.url} alt=""/></div><span>{img.label??img.anguloTag}</span>{selected.id === img.id && <Check size={13} />}</button>)}</div>}
       {scale && scale.id !== selected.id && <button className="button button-outline scale-button" onClick={()=>{setImageId(scale.id);setZoom(false);}}><Hand size={17}/>Ver escala real</button>}
-    <ScaleComparator height={plant.alturaCm}/>
     {editing && <button className="button button-outline full" onClick={onEditGallery}><Images size={17}/>Adicionar / remover fotos</button>}
     </div><div className="detail-info"><span className="eyebrow">{plant.categoria}</span><div className="detail-meta"><span>{plant.codigo}</span><span className={`status status-${plant.status}`}><i />{statusLabels[plant.status]}</span></div><h2><PlantInline plant={plant} field="nomePopular" editing={editing} onSave={onSaveField}/></h2><p className="scientific"><PlantInline plant={plant} field="especieCientifica" editing={editing} onSave={onSaveField}/></p><p className="detail-description"><PlantInline plant={plant} field="descricao" editing={editing} onSave={onSaveField}/></p>
       <div className="specs">{[['Idade estimada', plant.idadeEstimada, Sprout], ['Altura', plant.alturaCm === null ? '' : `${plant.alturaCm} cm`, Ruler], ['Nebari', plant.larguraNebariCm === null ? '' : `${plant.larguraNebariCm} cm`, Ruler], ['Estilo', plant.estilo, Sprout], ['Ambiente', plant.ambiente, Sun], ['Cuidado', plant.nivelCuidado, Hand]].filter(([,value])=>Boolean(value)).map(([label, value, Icon]) => { const Symbol = Icon as typeof Sprout; return <div key={String(label)}><Symbol size={17} /><span>{String(label)}<strong>{String(value)}</strong></span></div>; })}</div>

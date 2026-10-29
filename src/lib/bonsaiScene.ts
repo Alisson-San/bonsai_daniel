@@ -822,11 +822,13 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   const canopyBox = new THREE.Box3();
   for (const cluster of clusters) canopyBox.expandByPoint(cluster.center);
   canopyBox.expandByScalar(.45); canopyBox.translate(new V(0, tree.position.y, 0));
+  // A light sweep runs along the arch and across the plate's gold now and then (see `render`): -9 is off.
+  const sweep = { value: -9 };
   const archMaterial = new THREE.ShaderMaterial({
     // Same gold in both themes, as in the two logo files.
-    uniforms: { uColor: { value: new THREE.Color('#D4AF37') }, uDraw: { value: settled ? 1 : 0 } },
+    uniforms: { uColor: { value: new THREE.Color('#D4AF37') }, uDraw: { value: settled ? 1 : 0 }, uSweep: sweep },
     vertexShader: 'varying float vU;varying vec3 vN;varying vec3 vView;void main(){vU=uv.x;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vView=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
-    fragmentShader: 'uniform vec3 uColor;uniform float uDraw;varying float vU;varying vec3 vN;varying vec3 vView;void main(){float drawn=step(abs(vU-.5)*2.,uDraw);float facing=max(dot(vN,vView),0.);vec3 edge=uColor*vec3(.17,.12,.2);vec3 crest=uColor*vec3(.68,.47,.9);vec3 color=mix(edge,crest,pow(facing,.9))+vec3(.3,.2,.08)*pow(facing,24.);gl_FragColor=vec4(color,drawn);\n#include <colorspace_fragment>\n}',
+    fragmentShader: 'uniform vec3 uColor;uniform float uDraw;uniform float uSweep;varying float vU;varying vec3 vN;varying vec3 vView;void main(){float drawn=step(abs(vU-.5)*2.,uDraw);float facing=max(dot(vN,vView),0.);vec3 edge=uColor*vec3(.17,.12,.2);vec3 crest=uColor*vec3(.68,.47,.9);vec3 color=mix(edge,crest,pow(facing,.9))+vec3(.3,.2,.08)*pow(facing,24.);color+=vec3(1.,.9,.66)*.85*exp(-pow((vU-uSweep)*16.,2.))*pow(facing,.5);gl_FragColor=vec4(color,drawn);\n#include <colorspace_fragment>\n}',
     transparent: true, depthWrite: false,
   });
   const arch = new THREE.Group(); rig.add(arch);
@@ -868,6 +870,11 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   repaintPlaque();
   document.fonts?.load('600 100px "Cormorant Garamond"').then(() => { if (disposed) return; repaintPlaque(); if (reduced || !frame) render(0); }).catch(() => {});
   const plaqueMaterial = new THREE.MeshBasicMaterial({ map: plaqueTexture, transparent: true, toneMapped: false, fog: false });
+  // The sweep only lights gold texels (borders and lettering), in a slanted band, a moment after it leaves the arch.
+  plaqueMaterial.onBeforeCompile = shader => {
+    shader.uniforms.uSweep = sweep;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uSweep;').replace('#include <map_fragment>', '#include <map_fragment>\nfloat goldMask = smoothstep(.12, .35, diffuseColor.r - diffuseColor.b) * smoothstep(.3, .5, diffuseColor.r) * smoothstep(.38, .55, diffuseColor.g / max(diffuseColor.r, .01));\ndiffuseColor.rgb += vec3(1., .9, .66) * .6 * goldMask * exp(-pow((vMapUv.x + (1. - vMapUv.y) * .3 - (uSweep - .25) * 1.4) * 9., 2.));');
+  };
   const plaque = new THREE.Group(); rig.add(plaque);
   const plate = new THREE.Mesh(new THREE.PlaneGeometry(plaqueWidth, PLANE_HEIGHT), plaqueMaterial); plate.position.y = PLANE_TOP - PLANE_HEIGHT / 2; plaque.add(plate);
   // Design plane coordinates map to the screen as if at the tree; a homothety from the camera
@@ -909,6 +916,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // ---- Framing, entrance, interaction and loop.
   const composition = COMPOSITION;
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+  let turn = 0, scrollTurn = 0;
   // The entrance runs on wall-clock time, so slow devices still finish it in 1.5 s.
   let frameAverage = 1 / 60, frameCount = 0;
   let frame = 0, visible = true, first = true, elapsed = 0, previous = 0, entrance = settled ? 99 : 0, entranceStart = 0;
@@ -958,8 +966,17 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
       motion.uReveal.value = Math.max(0, (entrance - .45) / 1) * 1.25;
       if (entrance >= 2) { for (const material of fading) { material.transparent = material === plaqueMaterial; material.opacity = 1; material.needsUpdate = true; } motion.uReveal.value = 2; }
     }
-    if (!reduced) motion.uTime.value = elapsed;
+    if (!reduced) {
+      motion.uTime.value = elapsed;
+      // Light sweep: right after the scene appears, then every 9 s, 1.8 s across.
+      const phase = (elapsed - .4) % 9;
+      sweep.value = elapsed > .4 && phase < 1.8 ? phase / 1.8 * 1.5 - .25 : -9;
+    }
     pointer.x += (pointer.tx - pointer.x) * Math.min(1, dt * 2.5); pointer.y += (pointer.ty - pointer.y) * Math.min(1, dt * 2.5);
+    // Scrolling away from the hero turns the tree in its pot (up to 24°), showing it is a real 3D tree; the pot stays
+    // square to the plate, whose face it carries, and the roots stay inside it.
+    turn += (scrollTurn - turn) * Math.min(1, dt * 4);
+    tree.rotation.y = turn * THREE.MathUtils.degToRad(24);
     world.rotation.y = pointer.x * THREE.MathUtils.degToRad(8); world.rotation.x = -pointer.y * THREE.MathUtils.degToRad(2.5);
     renderer.render(scene, camera);
     if (first) { first = false; onFirstFrame(); }
@@ -977,7 +994,13 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   const resizeObserver = new ResizeObserver(resize);
   if (canvas.parentElement) { resizeObserver.observe(canvas.parentElement); const stage = canvas.parentElement.querySelector('.hero-stage'); if (stage) resizeObserver.observe(stage); }
   const intersection = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; start(); }); intersection.observe(canvas);
-  addEventListener('pointermove', move, { passive: true }); document.addEventListener('visibilitychange', start);
+  const scrolled = () => { scrollTurn = reduced ? 0 : Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight * .9))); };
+  // Phones tilt the tree with the device where orientation needs no permission (Android); iOS keeps the scroll turn.
+  const tilted = (event: DeviceOrientationEvent) => { if (reduced || event.gamma === null || event.beta === null) return; pointer.tx = Math.max(-1, Math.min(1, event.gamma / 25)); pointer.ty = Math.max(-1, Math.min(1, (event.beta - 50) / 30)); };
+  const orientation = typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches;
+  addEventListener('pointermove', move, { passive: true }); addEventListener('scroll', scrolled, { passive: true }); scrolled();
+  if (orientation) addEventListener('deviceorientation', tilted);
+  document.addEventListener('visibilitychange', start);
   // Shaders compile before the first frame, in parallel where the driver supports KHR_parallel_shader_compile,
   // for the final and the entrance (transparent) material states, so on phones neither the first frame
   // nor the end of the entrance blocks the page for seconds.
@@ -1003,7 +1026,7 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); resizeObserver.disconnect(); intersection.disconnect();
-      removeEventListener('pointermove', move); document.removeEventListener('visibilitychange', start);
+      removeEventListener('pointermove', move); removeEventListener('scroll', scrolled); removeEventListener('deviceorientation', tilted); document.removeEventListener('visibilitychange', start);
       scene.traverse(object => {
         const mesh = object as T.Mesh; mesh.geometry?.dispose();
         for (const material of ([] as T.Material[]).concat(mesh.material ?? [])) material.dispose();

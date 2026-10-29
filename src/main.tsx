@@ -10,6 +10,8 @@ import './photography.css';
 import './spatial.css';
 import './system.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode><MotionConfig reducedMotion="user" transition={{ type: 'spring', stiffness: 300, damping: 30 }}><App /><SpeedInsights /></MotionConfig></React.StrictMode>,
-);
+const root = document.getElementById('root')!;
+const app = <React.StrictMode><MotionConfig reducedMotion="user" transition={{ type: 'spring', stiffness: 300, damping: 30 }}><App path={location.pathname} /><SpeedInsights /></MotionConfig></React.StrictMode>;
+// Hydrate the prerendered page in place (no flash, and the opening animation is not replayed); render from scratch
+// when there is nothing to hydrate (development server).
+if (root.firstElementChild) ReactDOM.hydrateRoot(root, app); else ReactDOM.createRoot(root).render(app);

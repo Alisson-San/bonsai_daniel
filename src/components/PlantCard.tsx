@@ -1,5 +1,5 @@
 import { useRef, type PointerEvent } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Copy, Pencil, Trash2, RefreshCw } from 'lucide-react';
 import { coverOf, formatPrice, indicatorsOf, rawPhotosOf } from '../lib/catalog';
 import { statusLabels, type Indicators as Levels, type Plant } from '../lib/schema';
@@ -14,6 +14,8 @@ type Props = { plant: Plant; index: number; editing: boolean; onOpen: (source: H
 export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDuplicate, onStatus, onDelete, onInterest, onSaveField, onSaveIndicator }: Props) {
  const reduced = useReducedMotion();
  const visual = useRef<HTMLDivElement>(null);
+ // The photo opens up from a smaller window as it scrolls into view.
+ const inView = useInView(visual, { once: true, amount: .25 });
  const cover = coverOf(plant);
  const secondary = rawPhotosOf(plant).find(image => image.url !== cover.url);
  const tilt = (event: PointerEvent<HTMLDivElement>) => {
@@ -30,7 +32,7 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
   plant.larguraNebariCm !== null && `nebari de ${plant.larguraNebariCm} cm`,
  ].filter(Boolean) as string[];
  return <motion.article layout className={`plant-tile status-${plant.status}`} initial={reduced ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .12 }} transition={{ delay: Math.min(index % 3 * .12, .24), type: 'spring', stiffness: 300, damping: 30 }} exit={{ opacity: 0, scale: .96 }}>
-  <div className="tile-visual" ref={visual}>
+  <div className={`tile-visual ${inView || reduced ? 'is-in' : ''}`} ref={visual}>
    {plant.fotoVitrine
     ? <div className="vitrine-stage" onPointerMove={tilt} onPointerLeave={center}>
       <div className="vitrine-rig">
