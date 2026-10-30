@@ -195,7 +195,7 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Vendidos:** exemplares marcados como "Vendido" saem da coleção e aparecem em "Já encontraram um novo lar", com foto em tons apagados e acesso à ficha. Na curadoria e no filtro "Vendido" eles continuam na coleção, para edição.
 - **Como funciona:** passos da compra, editáveis na curadoria (passo e explicação).
 - **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (depoimento, nome e cidade).
-- **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema recua e esmaece e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
+- **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema sobe com a página encolhendo e esmaecendo (sem passar por trás do título) e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
 
 ## Coleção pessoal e exposições
 

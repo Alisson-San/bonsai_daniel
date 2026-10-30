@@ -243,8 +243,11 @@
 .is-home .site-header .wordmark{opacity:clamp(0,calc((var(--hero-p,0) - .55) * 2.6),1);transition:none}
 @media(prefers-reduced-motion:no-preference){
  .is-home .site-header .wordmark{transform:translateY(calc((1 - var(--hero-p,0)) * 10px)) scale(calc(.9 + var(--hero-p,0) * .1))}
- .is-home .hero-spatial #bonsai-3d-hero,.is-home .hero-spatial .hero-stage{transform:translateY(calc(var(--hero-p,0) * 14vh)) scale(calc(1 - var(--hero-p,0) * .12));transform-origin:50% 30%}
- .is-home .hero-spatial.is-ready #bonsai-3d-hero{opacity:calc(1 - var(--hero-p,0) * .65)}
+ /* The emblem scrolls with the page and only shrinks toward its own top while fading, so it never moves into the
+    title below it (moving it down, as a slower parallax layer, put it behind the title on phones). */
+ .is-home .hero-spatial #bonsai-3d-hero{transform:scale(calc(1 - var(--hero-p,0) * .16));transform-origin:50% 12%}
+ .is-home .hero-spatial .hero-stage{transform:scale(calc(1 - var(--hero-p,0) * .16));transform-origin:50% 0}
+ .is-home .hero-spatial.is-ready #bonsai-3d-hero{opacity:calc(1 - var(--hero-p,0) * .8)}
 }
 @media(max-width:580px){.sold-list{grid-template-columns:1fr 1fr;gap:24px 14px}.sold-item strong{font-size:18px}}
 
