@@ -8,6 +8,8 @@ import { StaleCatalogError, type CatalogRepository } from './repository.ts';
 export class NotAdminError extends Error {
   constructor() { super('Entre com uma conta de curadoria para salvar.'); }
 }
+// A photo could not be stored; nothing was saved. The message says which and why, for the curator.
+export class PhotoUploadError extends Error {}
 
 type Row = { revision: number; data: unknown };
 
@@ -29,19 +31,27 @@ async function uploadPhotos(catalog: Catalog): Promise<Catalog> {
   const collect = (url: string | undefined) => { if (url?.startsWith('data:')) pending.set(url, ''); };
   for (const plant of catalog.plants) { plant.galeria.forEach(image => collect(image.url)); collect(plant.fotoVitrine); }
   collect(catalog.settings.fotoCultivador); catalog.settings.bioGallery.forEach(photo => collect(photo.url));
+  catalog.personal.forEach(tree => tree.fotos.forEach(collect));
   if (!pending.size) return catalog;
   const db = await supabase();
-  for (const dataUrl of pending.keys()) {
-    const blob = await (await fetch(dataUrl)).blob();
-    const path = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.${extension[blob.type] ?? 'jpg'}`;
-    const { error } = await db.storage.from('fotos').upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false });
-    if (error) throw error;
-    pending.set(dataUrl, db.storage.from('fotos').getPublicUrl(path).data.publicUrl);
-  }
+  // Four uploads at a time: quick for a batch of phone photos without flooding a mobile connection.
+  const queue = [...pending.keys()];
+  const total = queue.length;
+  const worker = async () => {
+    for (let dataUrl = queue.shift(); dataUrl; dataUrl = queue.shift()) {
+      const blob = await (await fetch(dataUrl)).blob();
+      const path = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.${extension[blob.type] ?? 'jpg'}`;
+      const { error } = await db.storage.from('fotos').upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false });
+      if (error) throw new PhotoUploadError(`Não foi possível enviar ${total > 1 ? 'uma das fotos' : 'a foto'} (${Math.round(blob.size / 1024)} KB): ${error.message}. Nada foi salvo; tente de novo.`);
+      pending.set(dataUrl, db.storage.from('fotos').getPublicUrl(path).data.publicUrl);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, total) }, worker));
   const swap = (url: string) => pending.get(url) || url;
   return {
     ...catalog,
     plants: catalog.plants.map(plant => ({ ...plant, fotoVitrine: plant.fotoVitrine && swap(plant.fotoVitrine), galeria: plant.galeria.map(image => ({ ...image, url: swap(image.url) })) })),
+    personal: catalog.personal.map(tree => ({ ...tree, fotos: tree.fotos.map(swap) })),
     settings: { ...catalog.settings, fotoCultivador: catalog.settings.fotoCultivador && swap(catalog.settings.fotoCultivador), bioGallery: catalog.settings.bioGallery.map(photo => ({ ...photo, url: swap(photo.url) })) },
   };
 }

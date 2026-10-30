@@ -31,7 +31,7 @@ export const plantSchema = z.object({
   categoria: shortText.min(1), idadeEstimada: shortText, alturaCm: z.number().nonnegative().nullable(), larguraNebariCm: z.number().nonnegative().nullable(),
   estilo: shortText, ambiente: shortText, nivelCuidado: shortText, rega: shortText.default(''), cuidadoNivel: z.number().int().min(1).max(3).optional(), solarNivel: z.number().int().min(1).max(3).optional(),
   preco: z.number().nonnegative().nullable(), status: z.enum(statuses), descricao: z.string().max(12000),
-  galeria: z.array(imageSchema).min(1).max(24), capaId: z.string().min(1),
+  galeria: z.array(imageSchema).min(1).max(40), capaId: z.string().min(1),
 }).refine(p => p.galeria.some(i => i.id === p.capaId), 'Selecione uma capa da galeria.')
   .refine(p => new Set(p.galeria.map(i => i.id)).size === p.galeria.length, 'Imagens com identificador duplicado.');
 export const settingsSchema = z.object({
@@ -48,13 +48,22 @@ export const settingsSchema = z.object({
   // Home page: buying steps ("title | text") and testimonials ("quote | name | city"), one per line.
   purchaseSteps: z.string().max(4000).default(defaultTexts.purchaseSteps),
   testimonials: z.string().max(12000).default(''),
+  // Exhibitions, awards and courses, one per line: "year | title | event or place".
+  awards: z.string().max(8000).default(''),
   bioGallery: z.array(z.object({ id: z.string().min(1), url: imageUrl, legenda: shortText.default('') })).max(24).default([]),
+});
+// The cultivator's own trees, shown but not for sale: a short record (name, species, age, a few lines, photos).
+export const personalSchema = z.object({
+  id: z.string().min(1), nome: shortText.min(1), especie: shortText.default(''), idade: shortText.default(''),
+  descricao: z.string().max(2000).default(''), fotos: z.array(imageUrl).min(1).max(12),
 });
 export const catalogSchema = z.object({
   version: z.literal(1), plants: z.array(plantSchema).max(500), settings: settingsSchema,
   categories: z.array(shortText.min(1)).max(100), species: z.array(shortText.min(1)).max(200),
+  personal: z.array(personalSchema).max(100).default([]),
 }).refine(c => new Set(c.plants.map(p => p.id)).size === c.plants.length, 'Identificadores de exemplares duplicados.')
   .refine(c => new Set(c.plants.map(p => p.codigo.trim().toLowerCase())).size === c.plants.length, 'Códigos de exemplares duplicados.');
 export type Plant = z.infer<typeof plantSchema>;
 export type Settings = z.infer<typeof settingsSchema>;
 export type Catalog = z.infer<typeof catalogSchema>;
+export type PersonalTree = z.infer<typeof personalSchema>;

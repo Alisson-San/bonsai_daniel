@@ -186,7 +186,7 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Tabela `admins`:** e-mails que podem editar (hoje `alirod.santos@gmail.com`). Fechada para a API; para incluir alguém, rode no SQL Editor: `insert into public.admins (email) values ('email@exemplo.com');`
 - **Bucket `fotos`:** fotos enviadas na curadoria vão para o Storage na hora de salvar; o catálogo guarda só as URLs públicas.
 - **Regras (RLS):** leitura pública; inserir e alterar o catálogo e as fotos só para usuário logado com e-mail confirmado e listado em `admins` (`public.is_admin()`).
-- **Login:** o cadeado abre "Entrar na curadoria" (e-mail e senha); "Esqueci a senha" manda um link de troca. Não há cadastro público: para incluir alguém, convide pelo painel (Authentication → Users → Invite user) e inclua o e-mail em `admins`; o link do convite abre o site pedindo a senha.
+- **Login:** o cadeado abre "Entrar na curadoria" (e-mail e senha); "Sair" (na barra da curadoria ou no botão "Em edição") encerra a sessão, e a próxima entrada pede a senha de novo; "Esqueci a senha" manda um link de troca. Não há cadastro público: para incluir alguém, convide pelo painel (Authentication → Users → Invite user) e inclua o e-mail em `admins`; o link do convite abre o site pedindo a senha.
 - **Validação no banco:** além da validação no navegador, o banco recusa catálogos malformados ou acima de 8 MB, revisões que não avançam exatamente uma, e imagens fora de `/images/…`, `https://…` ou `data:image/…` (restrições `catalog_shape`, `catalog_size`, `catalog_images` e o gatilho `touch_catalog`).
 - **Cabeçalhos de segurança** (`vercel.json`): Content-Security-Policy (scripts só do site, do jsDelivr e o script inline do tema por hash; conexões só com o site, o Supabase e o jsDelivr; o site não pode ser exibido dentro de outros sites), `X-Frame-Options`, `Permissions-Policy` e `Cross-Origin-Opener-Policy`. Ao editar o script inline ou o `onload` de `index.html`, atualize o hash na CSP; o teste `tests/security.test.ts` avisa.
 - **Código:** `src/lib/supabase.ts` (configuração; a chave publicável pode ficar no navegador, e as variáveis `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` a substituem), `src/lib/remoteRepository.ts` (leitura, gravação e envio de fotos), `src/components/CurationAccess.tsx` (login). A biblioteca do Supabase só carrega quando a curadoria é aberta; visitantes leem o catálogo por uma chamada simples.
@@ -199,6 +199,15 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Como funciona:** passos da compra, editáveis na curadoria (um por linha, `título | texto`).
 - **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (um por linha, `depoimento | nome | cidade`).
 - **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema recua e esmaece e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
+
+## Coleção pessoal e exposições
+
+- **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Aparece na página inicial depois da coleção à venda; tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
+- **Exposições e prêmios:** lista curta editável na curadoria, uma linha por item no formato `ano | título | evento ou local` (do mais recente ao mais antigo). A página inicial mostra os 6 primeiros com o link "Ver todos"; a biografia mostra todos.
+
+## Fotos
+
+As fotos são reduzidas no próprio aparelho antes de subir: até 2000 px no lado maior, em JPEG (ou WebP quando têm transparência), cerca de 300 a 700 KB em vez dos 5 MB de uma foto de celular. Ao salvar, sobem quatro de cada vez para o Storage. Cada exemplar aceita até 40 fotos. Se alguma foto falhar, nada é salvo e o aviso diz o motivo.
 
 ## Abertura e 3D
 

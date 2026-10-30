@@ -27,9 +27,10 @@ export default function PlantEditor({ plant, catalog, onClose, onSave }: { plant
   };
   const upload = async (files: FileList | File[]) => {
     setError('');
-    if (draft.galeria.length + files.length > 24) { setError('Cada exemplar pode ter até 24 fotos.'); return; }
+    if (draft.galeria.length + files.length > 40) { setError(`Cada exemplar pode ter até 40 fotos. Esta ficha tem ${draft.galeria.length}; escolha no máximo ${40 - draft.galeria.length}.`); return; }
     setUploading(true);
-    try { const images = await Promise.all(Array.from(files).map(fileToImage)); addImages(images); }
+    // One at a time, so a large batch from a phone does not hold every full-size photo in memory at once.
+    try { const images: string[] = []; for (const file of Array.from(files)) images.push(await fileToImage(file)); addImages(images); }
     catch (e) { setError(e instanceof Error ? e.message : 'Falha ao carregar imagens.'); }
     finally { setUploading(false); }
   };
@@ -43,7 +44,7 @@ export default function PlantEditor({ plant, catalog, onClose, onSave }: { plant
   };
   const addUrl = () => {
     const value = url.trim();
-    if (draft.galeria.length >= 24) { setError('Cada exemplar pode ter até 24 fotos.'); return; }
+    if (draft.galeria.length >= 40) { setError('Cada exemplar pode ter até 40 fotos.'); return; }
     if (!/^https?:\/\//i.test(value) || !safeImageUrl(value)) { setError('Informe uma URL completa de imagem http(s).'); return; }
     addImages([value]); setUrl(''); setError('');
   };
