@@ -169,7 +169,7 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 
 ## Biografia (`/biografia`)
 
-Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo botão "Conheça a história" na seção O Cultivador e pelo menu. Tem retrato e apresentação, destaques, a história, a trajetória (marcos), uma galeria de eventos, exposições e prêmios e uma chamada para a coleção. Tudo é editado na própria página pelo modo Curadoria; blocos vazios ficam ocultos para os visitantes.
+Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo botão "Conheça a história" na seção O Cultivador e pelo menu. Tem retrato e apresentação, destaques, a história, a trajetória (marcos), as exposições e prêmios (com fotos) e uma chamada para a coleção. Tudo é editado na própria página pelo modo Curadoria; blocos vazios ficam ocultos para os visitantes.
 
 - **História:** parágrafos separados por uma linha em branco; o primeiro aparece em destaque.
 
@@ -193,8 +193,8 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 ## Seções da página inicial
 
 - **Vendidos:** exemplares marcados como "Vendido" saem da coleção e aparecem em "Já encontraram um novo lar", com foto em tons apagados e acesso à ficha. Na curadoria e no filtro "Vendido" eles continuam na coleção, para edição.
-- **Como funciona:** passos da compra, editáveis na curadoria (um por linha, `título | texto`).
-- **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (um por linha, `depoimento | nome | cidade`).
+- **Como funciona:** passos da compra, editáveis na curadoria (passo e explicação).
+- **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (depoimento, nome e cidade).
 - **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema recua e esmaece e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
 
 ## Coleção pessoal e exposições
