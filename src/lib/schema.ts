@@ -57,13 +57,19 @@ export const personalSchema = z.object({
   id: z.string().min(1), nome: shortText.min(1), especie: shortText.default(''), idade: shortText.default(''),
   descricao: z.string().max(2000).default(''), fotos: z.array(imageUrl).min(1).max(12),
 });
+// Exhibitions, awards and courses: one record each, with an optional photo (certificate, trophy, the tree on show).
+export const awardSchema = z.object({
+  id: z.string().min(1), ano: shortText.default(''), titulo: shortText.min(1), local: shortText.default(''), foto: imageUrl.optional(),
+});
 export const catalogSchema = z.object({
   version: z.literal(1), plants: z.array(plantSchema).max(500), settings: settingsSchema,
   categories: z.array(shortText.min(1)).max(100), species: z.array(shortText.min(1)).max(200),
   personal: z.array(personalSchema).max(100).default([]),
+  awards: z.array(awardSchema).max(80).default([]),
 }).refine(c => new Set(c.plants.map(p => p.id)).size === c.plants.length, 'Identificadores de exemplares duplicados.')
   .refine(c => new Set(c.plants.map(p => p.codigo.trim().toLowerCase())).size === c.plants.length, 'Códigos de exemplares duplicados.');
 export type Plant = z.infer<typeof plantSchema>;
 export type Settings = z.infer<typeof settingsSchema>;
 export type Catalog = z.infer<typeof catalogSchema>;
 export type PersonalTree = z.infer<typeof personalSchema>;
+export type Award = z.infer<typeof awardSchema>;

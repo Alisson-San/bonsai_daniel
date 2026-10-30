@@ -171,10 +171,7 @@ A árvore procedural ganhou relevo de casca, nebari com raízes aparentes, três
 
 Página própria do cultivador (`src/components/Biography.tsx`), aberta pelo botão "Conheça a história" na seção O Cultivador e pelo menu. Tem retrato e apresentação, destaques, a história, a trajetória (marcos), uma galeria de eventos, exposições e prêmios e uma chamada para a coleção. Tudo é editado na própria página pelo modo Curadoria; blocos vazios ficam ocultos para os visitantes.
 
-- **Destaques:** um por linha, `título | detalhe`.
 - **História:** parágrafos separados por uma linha em branco; o primeiro aparece em destaque.
-- **Trajetória:** um marco por linha, `ano | título | texto`.
-- **Galeria:** fotos enviadas na Curadoria, com legenda editável.
 
 A navegação entre a página inicial e a biografia é feita no próprio app (com transição de página onde o navegador suporta) e o botão voltar funciona. O build pré-renderiza as duas páginas (`dist/index.html` e `dist/biografia/index.html`, ver `vercel.json`), e o app hidrata o HTML pronto em vez de recriá-lo.
 
@@ -203,7 +200,8 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 ## Coleção pessoal e exposições
 
 - **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Aparece na página inicial depois da coleção à venda; tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
-- **Exposições e prêmios:** lista curta editável na curadoria, uma linha por item no formato `ano | título | evento ou local` (do mais recente ao mais antigo). A página inicial mostra os 6 primeiros com o link "Ver todos"; a biografia mostra todos.
+- **Exposições e prêmios** (`src/components/Awards.tsx`): cada registro tem ano, título, evento ou local e uma foto opcional (certificado, troféu ou a árvore na exposição). Na curadoria, "Adicionar exposição ou prêmio" abre um formulário, e cada card tem botões de editar e excluir; a lista se ordena do ano mais recente ao mais antigo. A página inicial mostra os 6 mais recentes com "Ver todos"; a biografia mostra todos. Fica no catálogo em `awards`. Prêmios cadastrados antes como texto e as fotos da antiga galeria da biografia são convertidos em registros automaticamente.
+- **Listas curtas** (destaques e trajetória da biografia, passos da compra, depoimentos): na curadoria, cada item tem campos com nome e botões para adicionar, remover e reordenar (`src/components/RowsEditor.tsx`).
 
 ## Fotos
 

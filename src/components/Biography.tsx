@@ -1,24 +1,23 @@
-import { useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Camera, Plus, Trash2 } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { Settings } from '../lib/schema';
-import Editable from './Editable';
+import RowsEditor from './RowsEditor';
 
-type BioText = 'bioPageLead' | 'bioStory' | 'bioHighlights' | 'bioMilestones';
+type BioText = 'bioPageLead' | 'bioStory';
 type Props = {
   settings: Settings; editing: boolean; saving: boolean; awards: ReactNode;
   inline: (key: BioText, label: string, multiline?: boolean) => ReactNode;
-  onAddPhoto: (file: File) => void; onRemovePhoto: (id: string) => void; onCaption: (id: string, legenda: string) => Promise<boolean>;
+  onSaveList: (key: 'bioHighlights' | 'bioMilestones', value: string) => Promise<boolean>;
 };
 
 const lines = (text: string) => text.split('\n').map(line => line.split('|').map(part => part.trim())).filter(parts => parts[0]);
 const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .2 } };
 
-// The cultivator's own page: portrait and lead, highlights, story, milestones and a photo gallery.
+// The cultivator's own page: portrait and lead, highlights, exhibitions and awards, story and milestones.
 // Every block is edited in place by the curator; empty blocks stay hidden for visitors.
-export default function Biography({ settings: s, editing, saving, awards, inline, onAddPhoto, onRemovePhoto, onCaption }: Props) {
+export default function Biography({ settings: s, editing, saving, awards, inline, onSaveList }: Props) {
   const reduced = useReducedMotion();
-  const upload = useRef<HTMLInputElement>(null);
   const motionProps = reduced ? {} : reveal;
   const highlights = lines(s.bioHighlights), milestones = lines(s.bioMilestones);
   const paragraphs = s.bioStory.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
@@ -35,7 +34,7 @@ export default function Biography({ settings: s, editing, saving, awards, inline
     </section>
 
     {(highlights.length > 0 || editing) && <section className="bio-highlights section-shell">
-      {editing ? <div className="bio-edit-block"><small>Destaques: um por linha, no formato <code>título | detalhe</code></small>{inline('bioHighlights', 'destaques', true)}</div>
+      {editing ? <div className="bio-edit-block"><small>Destaques (até 3 ou 4 aparecem lado a lado)</small><RowsEditor value={s.bioHighlights} saving={saving} addLabel="Adicionar destaque" fields={[{ label: 'Destaque', placeholder: '15 anos' }, { label: 'Complemento', placeholder: 'dedicados ao bonsai' }]} onSave={value => onSaveList('bioHighlights', value)} /></div>
         : highlights.map(([title, detail], i) => <motion.div key={i} className="bio-highlight" {...motionProps} transition={{ delay: i * .1 }}><strong>{title}</strong>{detail && <span>{detail}</span>}</motion.div>)}
     </section>}
 
@@ -52,21 +51,8 @@ export default function Biography({ settings: s, editing, saving, awards, inline
     {(milestones.length > 0 || editing) && <section className="bio-timeline section-shell">
       <span className="eyebrow">TRAJETÓRIA</span>
       <h2>Marcos de uma vida no bonsai.</h2>
-      {editing ? <div className="bio-edit-block"><small>Um marco por linha, no formato <code>ano | título | texto</code></small>{inline('bioMilestones', 'marcos da trajetória', true)}</div>
+      {editing ? <div className="bio-edit-block"><small>Marcos da trajetória, em ordem</small><RowsEditor value={s.bioMilestones} saving={saving} addLabel="Adicionar marco" fields={[{ label: 'Ano', placeholder: '2010', width: 'narrow' }, { label: 'Título', placeholder: 'Primeiro bonsai' }, { label: 'Texto', placeholder: 'Opcional', long: true }]} onSave={value => onSaveList('bioMilestones', value)} /></div>
         : <ol>{milestones.map(([year, title, text], i) => <motion.li key={i} {...motionProps}><span className="bio-year">{year}</span><div><strong>{title}</strong>{text && <p>{text}</p>}</div></motion.li>)}</ol>}
-    </section>}
-
-    {(s.bioGallery.length > 0 || editing) && <section className="bio-gallery section-shell">
-      <span className="eyebrow">EVENTOS, EXPOSIÇÕES E PRÊMIOS</span>
-      <div className="bio-grid">
-        {s.bioGallery.map(photo => <motion.figure key={photo.id} {...motionProps}>
-          <img src={photo.url} alt={photo.legenda || 'Foto da trajetória de Daniel Bourscheid'} loading="lazy" decoding="async" />
-          {(photo.legenda || editing) && <figcaption><Editable value={photo.legenda} editing={editing} label="legenda" onSave={value => onCaption(photo.id, value)} /></figcaption>}
-          {editing && <button className="icon-button danger bio-remove" aria-label="Remover foto" onClick={() => onRemovePhoto(photo.id)} disabled={saving}><Trash2 size={15} /></button>}
-        </motion.figure>)}
-        {editing && <button className="bio-add" onClick={() => upload.current?.click()} disabled={saving}><Plus size={24} strokeWidth={1.2} /><span><Camera size={15} />Adicionar foto</span></button>}
-      </div>
-      <input ref={upload} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e => { const file = e.target.files?.[0]; if (file) onAddPhoto(file); e.target.value = ''; }} />
     </section>}
 
     <section className="bio-cta section-shell">
