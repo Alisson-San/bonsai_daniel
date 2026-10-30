@@ -6,7 +6,7 @@ import Editable from './Editable';
 
 type BioText = 'bioPageLead' | 'bioStory' | 'bioHighlights' | 'bioMilestones';
 type Props = {
-  settings: Settings; editing: boolean; saving: boolean;
+  settings: Settings; editing: boolean; saving: boolean; awards: ReactNode;
   inline: (key: BioText, label: string, multiline?: boolean) => ReactNode;
   onAddPhoto: (file: File) => void; onRemovePhoto: (id: string) => void; onCaption: (id: string, legenda: string) => Promise<boolean>;
 };
@@ -16,7 +16,7 @@ const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0
 
 // The cultivator's own page: portrait and lead, highlights, story, milestones and a photo gallery.
 // Every block is edited in place by the curator; empty blocks stay hidden for visitors.
-export default function Biography({ settings: s, editing, saving, inline, onAddPhoto, onRemovePhoto, onCaption }: Props) {
+export default function Biography({ settings: s, editing, saving, awards, inline, onAddPhoto, onRemovePhoto, onCaption }: Props) {
   const reduced = useReducedMotion();
   const upload = useRef<HTMLInputElement>(null);
   const motionProps = reduced ? {} : reveal;
@@ -38,6 +38,8 @@ export default function Biography({ settings: s, editing, saving, inline, onAddP
       {editing ? <div className="bio-edit-block"><small>Destaques: um por linha, no formato <code>título | detalhe</code></small>{inline('bioHighlights', 'destaques', true)}</div>
         : highlights.map(([title, detail], i) => <motion.div key={i} className="bio-highlight" {...motionProps} transition={{ delay: i * .1 }}><strong>{title}</strong>{detail && <span>{detail}</span>}</motion.div>)}
     </section>}
+
+    {awards}
 
     {(paragraphs.length > 0 || editing) && <section className="bio-story section-shell">
       <motion.div {...motionProps}>

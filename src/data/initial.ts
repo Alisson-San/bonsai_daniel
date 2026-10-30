@@ -10,6 +10,7 @@ export const initialCatalog: Catalog = {
   version: 1,
   categories: ['Pré-Bonsai de Engorda', 'Bonsai Formado', 'Exemplar de Coleção / Mestre', 'Shohin'],
   species: [],
+  personal: [],
   settings: {
     heroEyebrow: 'BONSAI DANIEL BOURSCHEID',
     heroTitle: 'Bonsaísta há 15 anos.',
@@ -18,7 +19,7 @@ export const initialCatalog: Catalog = {
     // Text pending from Daniel; the paragraph stays hidden while empty.
     bio: '',
     whatsapp: '', instagram: '', location: '', messageTemplate: defaultTemplate,
-    ...defaultTexts, bioStory: '', bioMilestones: '', bioGallery: [], testimonials: '',
+    ...defaultTexts, bioStory: '', bioMilestones: '', bioGallery: [], testimonials: '', awards: '',
   },
   plants: [1, 2].map((n): Plant => ({
     framing: {...defaultFraming}, id: `db-00${n}`, codigo: `#DB-00${n}`, nomePopular: n === 1 ? 'Ficus Microcarpa — Tronco Esculpido' : 'Ficus Retusa — Tronco Duplo',
