@@ -13,8 +13,19 @@ function upgradeSettings(settings: Settings): Settings {
  for (const [key, old] of Object.entries(previousSettings) as [keyof Settings, string[]][]) if (old.includes(next[key] as string)) Object.assign(next, { [key]: initialCatalog.settings[key] });
  return next;
 }
+// Awards used to be "year | title | place" lines (settings.awards) and the biography had a separate photo gallery
+// (settings.bioGallery). Both become award records (photos with their caption as title), once.
+function upgradeAwards(catalog: Catalog): Catalog {
+ const { settings } = catalog;
+ if (!settings.awards.trim() && !settings.bioGallery.length) return catalog;
+ const fromLines = settings.awards.split('\n').map(line => line.split('|').map(part => part.trim())).filter(parts => parts[0])
+  .map(([first, second = '', third = ''], i) => /^\d{4}$/.test(first) ? { id: `award-text-${i}`, ano: first, titulo: second || first, local: third } : { id: `award-text-${i}`, ano: '', titulo: first, local: second });
+ const fromPhotos = settings.bioGallery.map(photo => ({ id: photo.id, ano: '', titulo: photo.legenda || 'Evento', local: '', foto: photo.url }));
+ return { ...catalog, awards: [...catalog.awards, ...fromLines, ...fromPhotos], settings: { ...settings, awards: '', bioGallery: [] } };
+}
 // Match whole published records. Never merge defaults into customized/deleted plants.
-export function upgradeSeed(catalog: Catalog): Catalog {
+export function upgradeSeed(stored: Catalog): Catalog {
+ const catalog = upgradeAwards(stored);
  return { ...catalog, settings: upgradeSettings(catalog.settings), plants: catalog.plants.map(plant => {
   const seed=initialCatalog.plants.find(p=>p.id===plant.id);
   const previous=previousSeeds.find(p=>p.id===plant.id);

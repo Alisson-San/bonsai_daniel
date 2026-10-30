@@ -11,6 +11,7 @@ export const initialCatalog: Catalog = {
   categories: ['Pré-Bonsai de Engorda', 'Bonsai Formado', 'Exemplar de Coleção / Mestre', 'Shohin'],
   species: [],
   personal: [],
+  awards: [],
   settings: {
     heroEyebrow: 'BONSAI DANIEL BOURSCHEID',
     heroTitle: 'Bonsaísta há 15 anos.',

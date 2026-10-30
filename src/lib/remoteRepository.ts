@@ -32,6 +32,7 @@ async function uploadPhotos(catalog: Catalog): Promise<Catalog> {
   for (const plant of catalog.plants) { plant.galeria.forEach(image => collect(image.url)); collect(plant.fotoVitrine); }
   collect(catalog.settings.fotoCultivador); catalog.settings.bioGallery.forEach(photo => collect(photo.url));
   catalog.personal.forEach(tree => tree.fotos.forEach(collect));
+  catalog.awards.forEach(award => collect(award.foto));
   if (!pending.size) return catalog;
   const db = await supabase();
   // Four uploads at a time: quick for a batch of phone photos without flooding a mobile connection.
@@ -52,6 +53,7 @@ async function uploadPhotos(catalog: Catalog): Promise<Catalog> {
     ...catalog,
     plants: catalog.plants.map(plant => ({ ...plant, fotoVitrine: plant.fotoVitrine && swap(plant.fotoVitrine), galeria: plant.galeria.map(image => ({ ...image, url: swap(image.url) })) })),
     personal: catalog.personal.map(tree => ({ ...tree, fotos: tree.fotos.map(swap) })),
+    awards: catalog.awards.map(award => award.foto ? { ...award, foto: swap(award.foto) } : award),
     settings: { ...catalog.settings, fotoCultivador: catalog.settings.fotoCultivador && swap(catalog.settings.fotoCultivador), bioGallery: catalog.settings.bioGallery.map(photo => ({ ...photo, url: swap(photo.url) })) },
   };
 }

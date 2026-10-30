@@ -1,33 +1,33 @@
-import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { coverOf } from '../lib/catalog';
 import type { Plant } from '../lib/schema';
+import RowsEditor from './RowsEditor';
 
-type Inline = (key: 'purchaseSteps' | 'testimonials', label: string, multiline?: boolean) => ReactNode;
+type SaveList = (value: string) => Promise<boolean>;
 const lines = (text: string) => text.split('\n').map(line => line.split('|').map(part => part.trim())).filter(parts => parts[0]);
 const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .3 } };
 
-// How buying works, in numbered steps. Edited as "title | text" lines in the curation mode.
-export function PurchaseSteps({ text, editing, inline }: { text: string; editing: boolean; inline: Inline }) {
+// How buying works, in numbered steps.
+export function PurchaseSteps({ text, editing, saving, onSave }: { text: string; editing: boolean; saving: boolean; onSave: SaveList }) {
   const reduced = useReducedMotion(), steps = lines(text);
   if (!steps.length && !editing) return null;
   return <section className="purchase section-shell" id="como-comprar">
     <span className="eyebrow">COMO FUNCIONA</span>
     <h2>Do primeiro olhar<br />ao seu jardim.</h2>
-    {editing ? <div className="bio-edit-block"><small>Um passo por linha, no formato <code>título | texto</code></small>{inline('purchaseSteps', 'passos da compra', true)}</div>
+    {editing ? <div className="bio-edit-block"><small>Passos da compra, em ordem</small><RowsEditor value={text} saving={saving} addLabel="Adicionar passo" fields={[{ label: 'Passo', placeholder: 'Escolha', width: 'narrow' }, { label: 'Explicação', placeholder: 'Veja as fotos reais…', long: true }]} onSave={onSave} /></div>
       : <ol className="purchase-steps">{steps.map(([title, detail], i) => <motion.li key={i} {...(reduced ? {} : reveal)} transition={{ delay: i * .12 }}>
         <span className="purchase-number">{String(i + 1).padStart(2, '0')}</span><strong>{title}</strong>{detail && <p>{detail}</p>}
       </motion.li>)}</ol>}
   </section>;
 }
 
-// Quotes from buyers ("quote | name | city" lines); hidden until the first one is added.
-export function Testimonials({ text, editing, inline }: { text: string; editing: boolean; inline: Inline }) {
+// Quotes from buyers; hidden until the first one is added.
+export function Testimonials({ text, editing, saving, onSave }: { text: string; editing: boolean; saving: boolean; onSave: SaveList }) {
   const reduced = useReducedMotion(), quotes = lines(text);
   if (!quotes.length && !editing) return null;
   return <section className="testimonials section-shell" id="depoimentos">
     <span className="eyebrow">QUEM JÁ CULTIVA</span>
-    {editing ? <div className="bio-edit-block"><small>Um depoimento por linha, no formato <code>depoimento | nome | cidade</code></small>{inline('testimonials', 'depoimentos', true)}</div>
+    {editing ? <div className="bio-edit-block"><small>Depoimentos de quem comprou</small><RowsEditor value={text} saving={saving} addLabel="Adicionar depoimento" fields={[{ label: 'Depoimento', placeholder: 'Chegou perfeito…', long: true }, { label: 'Nome', placeholder: 'Marcos' }, { label: 'Cidade', placeholder: 'Joinville, SC' }]} onSave={onSave} /></div>
       : <div className="testimonial-list">{quotes.map(([quote, name, city], i) => <motion.figure key={i} {...(reduced ? {} : reveal)} transition={{ delay: i * .12 }}>
         <blockquote>“{quote}”</blockquote>{name && <figcaption><strong>{name}</strong>{city && <span>{city}</span>}</figcaption>}
       </motion.figure>)}</div>}

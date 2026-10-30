@@ -45,3 +45,13 @@ it('catálogos salvos antes da biografia e das seções novas continuam válidos
  assert.equal(parsed.settings.testimonials, '');
  assert.deepEqual(parsed.settings.bioGallery, []);
 });
+
+it('prêmios em texto e fotos da antiga galeria viram registros de exposições e prêmios', () => {
+ const data = structuredClone(initialCatalog);
+ data.settings.awards = '2024 | 1º lugar Shohin | Exposição Nacional\nCurso de aramação | Escola X';
+ data.settings.bioGallery = [{ id: 'g1', url: '/images/bonsai_01.jpeg', legenda: 'Exposição de outono' }];
+ const upgraded = upgradeSeed(data);
+ assert.deepEqual(upgraded.awards.map(a => [a.ano, a.titulo, a.local, a.foto]), [['2024', '1º lugar Shohin', 'Exposição Nacional', undefined], ['', 'Curso de aramação', 'Escola X', undefined], ['', 'Exposição de outono', '', '/images/bonsai_01.jpeg']]);
+ assert.equal(upgraded.settings.awards, ''); assert.deepEqual(upgraded.settings.bioGallery, []);
+ assert.deepEqual(upgradeSeed(upgraded).awards.length, 3);
+});

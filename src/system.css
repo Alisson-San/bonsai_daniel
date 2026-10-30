@@ -143,15 +143,6 @@
 .bio-year{font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;line-height:1.1;color:var(--gold-bright);font-feature-settings:"lnum" 1}
 .bio-timeline strong{font-size:19px;font-weight:500;color:var(--text)}
 .bio-timeline li p{margin-top:6px;color:var(--muted);font-size:var(--fs-body);line-height:1.65}
-.bio-gallery{padding-top:var(--section-y);padding-bottom:var(--section-y);border-top:1px solid var(--line)}
-.bio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:24px;margin-top:32px}
-.bio-grid figure{position:relative;margin:0}
-.bio-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-lg)}
-.bio-grid figcaption{margin-top:12px;font-size:var(--fs-small);color:var(--muted)}
-.bio-remove{position:absolute;top:12px;right:12px;background:var(--glass)}
-.bio-add{aspect-ratio:4/3;border:1px dashed var(--line);border-radius:var(--radius-lg);background:transparent;color:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
-.bio-add span{display:flex;align-items:center;gap:8px;font-size:var(--fs-small)}
-.bio-add:hover{border-color:var(--gold)}
 .bio-cta{text-align:center;padding-top:var(--section-y);padding-bottom:var(--section-y);border-top:1px solid var(--line)}
 .bio-edit-block{display:flex;flex-direction:column;gap:10px;width:100%;max-width:860px;padding:20px;border:1px dashed var(--line);border-radius:var(--radius)}
 .bio-highlights .bio-edit-block{margin:24px auto;grid-column:1/-1;background:var(--bg)}
@@ -252,8 +243,11 @@
 .is-home .site-header .wordmark{opacity:clamp(0,calc((var(--hero-p,0) - .55) * 2.6),1);transition:none}
 @media(prefers-reduced-motion:no-preference){
  .is-home .site-header .wordmark{transform:translateY(calc((1 - var(--hero-p,0)) * 10px)) scale(calc(.9 + var(--hero-p,0) * .1))}
- .is-home .hero-spatial #bonsai-3d-hero,.is-home .hero-spatial .hero-stage{transform:translateY(calc(var(--hero-p,0) * 14vh)) scale(calc(1 - var(--hero-p,0) * .12));transform-origin:50% 30%}
- .is-home .hero-spatial.is-ready #bonsai-3d-hero{opacity:calc(1 - var(--hero-p,0) * .65)}
+ /* The emblem scrolls with the page and only shrinks toward its own top while fading, so it never moves into the
+    title below it (moving it down, as a slower parallax layer, put it behind the title on phones). */
+ .is-home .hero-spatial #bonsai-3d-hero{transform:scale(calc(1 - var(--hero-p,0) * .16));transform-origin:50% 12%}
+ .is-home .hero-spatial .hero-stage{transform:scale(calc(1 - var(--hero-p,0) * .16));transform-origin:50% 0}
+ .is-home .hero-spatial.is-ready #bonsai-3d-hero{opacity:calc(1 - var(--hero-p,0) * .8)}
 }
 @media(max-width:580px){.sold-list{grid-template-columns:1fr 1fr;gap:24px 14px}.sold-item strong{font-size:18px}}
 
@@ -318,13 +312,43 @@
 @media(max-width:800px){.personal-viewer{grid-template-columns:1fr}.personal-viewer-photo>img{max-height:60vh}.personal-editor-row{grid-template-columns:1fr}}
 @media(max-width:580px){.personal-grid{grid-template-columns:1fr 1fr;gap:28px 14px}.personal-card strong{font-size:19px}}
 
-/* ---- Exhibitions and awards (compact) ---- */
+/* ---- Exhibitions and awards: cards, photo optional ---- */
 .awards{padding-top:var(--section-y);padding-bottom:var(--section-y);border-top:1px solid var(--line)}
 .awards h2{font-size:var(--fs-h2);line-height:1.1;margin:14px 0 clamp(28px,4vw,48px)}
-.awards-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.awards-list li{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1fr);gap:8px 24px;align-items:baseline;padding:20px 0;border-bottom:1px solid var(--line)}
-.awards-year{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;line-height:1;color:var(--gold-bright);font-feature-settings:"lnum" 1}
-.awards-list strong{font-size:18px;font-weight:500;color:var(--text)}
-.awards-place{font-size:var(--fs-small);color:var(--muted);text-align:right}
-.awards .text-link{margin-top:20px}
-@media(max-width:700px){.awards-list li{grid-template-columns:64px minmax(0,1fr)}.awards-place{grid-column:2;text-align:left}}
+.awards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:20px}
+.award-card{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:calc(var(--radius-lg) - 8px);overflow:hidden;background:var(--surface)}
+.award-photo{display:block;padding:0;border:0;background:var(--secondary);aspect-ratio:4/3;overflow:hidden;cursor:zoom-in}
+.award-photo img{width:100%;height:100%;object-fit:cover;transition:transform .9s cubic-bezier(.16,1,.3,1)}
+@media(hover:hover){.award-photo:hover img{transform:scale(1.04)}}
+.award-text{display:flex;flex-direction:column;gap:6px;padding:20px 22px 22px}
+.awards-year{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;line-height:1;color:var(--gold-bright);font-feature-settings:"lnum" 1}
+.award-text strong{font-size:18px;font-weight:500;line-height:1.35;color:var(--text)}
+.awards-place{font-size:var(--fs-small);color:var(--muted)}
+.award-admin{position:absolute;top:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.awards-add{min-height:160px;border:1px dashed var(--line);border-radius:calc(var(--radius-lg) - 8px);background:transparent;color:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:var(--fs-small);padding:20px}
+.awards-add:hover{border-color:var(--gold)}
+.awards .text-link{margin-top:24px}
+.award-viewer{margin:0;display:flex;flex-direction:column;background:#050a07}
+.award-viewer img{width:100%;max-height:78vh;object-fit:contain}
+.award-viewer figcaption{display:flex;flex-direction:column;gap:4px;padding:18px 24px;background:var(--surface);color:var(--muted);font-size:var(--fs-small)}
+.award-viewer figcaption strong{color:var(--text);font-size:18px;font-weight:500}
+.award-editor-row{display:grid;grid-template-columns:110px 1fr;gap:12px}
+.award-editor-photo>div{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.award-editor-photo>div img{width:100%;max-height:260px;object-fit:cover}
+.award-editor-photo>div .icon-button{position:absolute;top:8px;right:8px;background:#000a;color:#fff}
+.award-editor-photo>button:not(.text-link){width:100%;border:1px dashed var(--line);border-radius:12px;background:none;color:var(--gold);display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px;font-size:14px}
+.award-editor-photo small{color:var(--muted);font-size:12px}
+
+/* ---- Curation list editor (highlights, milestones, steps, testimonials) ---- */
+.rows-editor{display:flex;flex-direction:column;gap:12px;width:100%}
+.rows-editor-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.rows-editor-row label{flex:1 1 180px;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);text-align:left}
+.rows-editor-row label.is-narrow{flex:0 1 110px}
+.rows-editor-row label.is-long{flex:2 1 260px}
+.rows-editor-row input,.rows-editor-row textarea{min-height:42px;padding:8px 12px;font-size:15px;border:1px solid var(--line);background:var(--input);color:var(--text)}
+.rows-editor-row textarea{min-height:42px;resize:vertical}
+.rows-editor-actions{display:flex;gap:2px}
+.rows-editor-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.rows-editor-footer>span{display:flex;align-items:center;gap:16px}
+.rows-editor-footer .text-link{margin:0;display:inline-flex;align-items:center;gap:6px}
+.bio-edit-block .rows-editor{margin-top:4px}

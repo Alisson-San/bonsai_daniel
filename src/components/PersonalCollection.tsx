@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ImagePlus, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
@@ -100,22 +100,4 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
       <div className="editor-actions"><button type="button" className="button button-outline" onClick={onClose} disabled={busy}>Cancelar</button><button className="button button-gold" disabled={busy}>{saving ? 'Salvando…' : 'Salvar árvore'}</button></div>
     </form>
   </Modal>;
-}
-
-type AwardsProps = { text: string; editing: boolean; inline: (label: string) => ReactNode; limit?: number; link?: boolean };
-const rows = (text: string) => text.split('\n').map(line => line.split('|').map(part => part.trim())).filter(parts => parts[0]);
-
-// Exhibitions, awards and courses in a compact list ("year | title | event or place"). On the home page it shows the
-// most recent few with a link to the biography; the biography shows all.
-export function Awards({ text, editing, inline, limit, link }: AwardsProps) {
-  const reduced = useReducedMotion();
-  const all = rows(text), shown = limit ? all.slice(0, limit) : all;
-  if (!all.length && !editing) return null;
-  return <section className="awards section-shell" id="premios">
-    <span className="eyebrow">EXPOSIÇÕES E PRÊMIOS</span>
-    <h2>Reconhecimento<br />em cada estação.</h2>
-    {editing ? <div className="bio-edit-block"><small>Um por linha, do mais recente ao mais antigo, no formato <code>ano | título | evento ou local</code>. Ex.: <code>2024 | 1º lugar, categoria Shohin | Exposição Nacional de Bonsai</code></small>{inline('exposições e prêmios')}</div>
-      : <ol className="awards-list">{shown.map(([year, title, place], i) => <motion.li key={i} {...(reduced ? {} : reveal)} transition={{ delay: i * .06 }}><span className="awards-year">{year}</span><strong>{title}</strong>{place && <span className="awards-place">{place}</span>}</motion.li>)}</ol>}
-    {link && !editing && all.length > shown.length && <a className="text-link" href="/biografia#premios" data-route>Ver todos ({all.length})</a>}
-  </section>;
 }
