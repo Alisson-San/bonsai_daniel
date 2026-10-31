@@ -1,42 +1,70 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ImagePlus, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Crop, ImagePlus, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
+import PhotoAdjuster from './PhotoAdjuster';
 import { fileToImage } from '../lib/media';
 import { personalSchema, type PersonalTree } from '../lib/schema';
+import SectionMark from './SectionMark';
 
 const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .2 } };
 const MAX_PHOTOS = 12;
 
 type Props = {
   trees: PersonalTree[]; editing: boolean; saving: boolean;
+  // Home page: the first `limit` trees as a compact gallery with a link to the cultivator page, which shows them all
+  // as large editorial rows (`feature`).
+  limit?: number; feature?: boolean;
   onSave: (tree: PersonalTree) => Promise<boolean>; onDelete: (tree: PersonalTree) => void; notify: (message: string) => void;
 };
 
-// The cultivator's own trees, not for sale: a gallery on the home page with a short record per tree.
-export function PersonalCollection({ trees, editing, saving, onSave, onDelete, notify }: Props) {
+// The cultivator's own trees, not for sale, with a short record per tree.
+export function PersonalCollection({ trees, editing, saving, limit, feature = false, onSave, onDelete, notify }: Props) {
   const reduced = useReducedMotion();
-  const [viewing, setViewing] = useState<PersonalTree | null>(null);
+  const [viewing, setViewing] = useState<{ tree: PersonalTree; index: number } | null>(null);
   const [editor, setEditor] = useState<PersonalTree | null>(null);
   if (!trees.length && !editing) return null;
-  return <section className="personal section-shell" id="colecao-pessoal">
-    <div className="section-heading"><div><span className="eyebrow">COLEÇÃO PESSOAL</span><h2>Árvores que ficam<br />com o cultivador.</h2></div><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>
-    <div className="personal-grid">
-      {editing && <button className="personal-add" onClick={() => setEditor({ id: crypto.randomUUID(), nome: '', especie: '', idade: '', descricao: '', fotos: [] })} disabled={saving}><Plus size={26} strokeWidth={1.2} /><span>Adicionar bonsai da coleção</span></button>}
-      {trees.map((tree, i) => <motion.article key={tree.id} className="personal-card" {...(reduced ? {} : reveal)} transition={{ delay: i % 4 * .08 }}>
-        <button className="personal-photo" onClick={() => setViewing(tree)} aria-label={`Ver ${tree.nome}`}><img src={tree.fotos[0]} alt={tree.nome} loading="lazy" decoding="async" />{tree.fotos.length > 1 && <span className="personal-count">{tree.fotos.length} fotos</span>}</button>
-        <strong>{tree.nome}</strong>
-        <span className="personal-meta">{[tree.especie, tree.idade].filter(Boolean).join(' · ')}</span>
-        {editing && <div className="personal-admin"><button className="icon-button" aria-label={`Editar ${tree.nome}`} onClick={() => setEditor(tree)} disabled={saving}><Pencil size={15} /></button><button className="icon-button danger" aria-label={`Excluir ${tree.nome}`} onClick={() => onDelete(tree)} disabled={saving}><Trash2 size={15} /></button></div>}
+  const shown = limit && !editing ? trees.slice(0, limit) : trees;
+  const add = editing && <button className="personal-add" onClick={() => setEditor({ id: crypto.randomUUID(), nome: '', especie: '', idade: '', descricao: '', fotos: [] })} disabled={saving}><Plus size={26} strokeWidth={1.2} /><span>Adicionar bonsai da coleção</span></button>;
+  const admin = (tree: PersonalTree) => editing && <div className="personal-admin"><button className="icon-button" aria-label={`Editar ${tree.nome}`} onClick={() => setEditor(tree)} disabled={saving}><Pencil size={15} /></button><button className="icon-button danger" aria-label={`Excluir ${tree.nome}`} onClick={() => onDelete(tree)} disabled={saving}><Trash2 size={15} /></button></div>;
+  const meta = (tree: PersonalTree) => [tree.especie, tree.idade].filter(Boolean).join(' · ');
+  return <section className={`personal section-shell ${feature ? 'is-feature' : ''}`} id="colecao-pessoal">
+    {feature
+      ? <div className="feature-heading"><SectionMark label="COLEÇÃO PESSOAL" /><h2>Árvores que ficam<br />com o cultivador.</h2><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>
+      : <div className="section-heading"><div><SectionMark label="COLEÇÃO PESSOAL" /><h2>Árvores que ficam<br />com o cultivador.</h2></div><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>}
+    {feature ? <div className="personal-feature">
+      {add}
+      {shown.map((tree, i) => <motion.article key={tree.id} className="personal-row" {...(reduced ? {} : reveal)}>
+        <div className="personal-row-media">
+          <button className="personal-photo" onClick={() => setViewing({ tree, index: 0 })} aria-label={`Ampliar fotos de ${tree.nome}`}><img src={tree.fotos[0]} alt={tree.nome} loading="lazy" decoding="async" /></button>
+          {admin(tree)}
+        </div>
+        <div className="personal-row-text">
+          <span className="personal-index">{String(i + 1).padStart(2, '0')}</span>
+          <h3>{tree.nome}</h3>
+          {meta(tree) && <p className="scientific">{meta(tree)}</p>}
+          {tree.descricao && <p className="personal-description">{tree.descricao}</p>}
+          {tree.fotos.length > 1 && <div className="personal-thumbs">{tree.fotos.slice(1, 6).map((url, k) => <button key={url + k} onClick={() => setViewing({ tree, index: k + 1 })} aria-label={`Ver foto ${k + 2} de ${tree.nome}`}><img src={url} alt="" loading="lazy" decoding="async" /></button>)}{tree.fotos.length > 6 && <button className="personal-more" onClick={() => setViewing({ tree, index: 6 })} aria-label={`Ver todas as ${tree.fotos.length} fotos`}>+{tree.fotos.length - 6}</button>}</div>}
+          <span className="personal-tag">Não está à venda</span>
+        </div>
       </motion.article>)}
-    </div>
-    {viewing && <PersonalViewer tree={viewing} onClose={() => setViewing(null)} />}
+    </div> : <div className="personal-grid">
+      {add}
+      {shown.map((tree, i) => <motion.article key={tree.id} className="personal-card" {...(reduced ? {} : reveal)} transition={{ delay: i % 4 * .08 }}>
+        <button className="personal-photo" onClick={() => setViewing({ tree, index: 0 })} aria-label={`Ver ${tree.nome}`}><img src={tree.fotos[0]} alt={tree.nome} loading="lazy" decoding="async" />{tree.fotos.length > 1 && <span className="personal-count">{tree.fotos.length} fotos</span>}</button>
+        <strong>{tree.nome}</strong>
+        <span className="personal-meta">{meta(tree)}</span>
+        {admin(tree)}
+      </motion.article>)}
+    </div>}
+    {limit && !editing && <a className="text-link section-more" href="/biografia#colecao-pessoal" data-route>{trees.length > shown.length ? `Ver toda a coleção pessoal (${trees.length})` : 'Conhecer cada árvore na página do cultivador'}<ArrowRight size={15} /></a>}
+    {viewing && <PersonalViewer tree={viewing.tree} start={viewing.index} onClose={() => setViewing(null)} />}
     {editor && <PersonalEditor tree={editor} saving={saving} notify={notify} onClose={() => setEditor(null)} onSave={async tree => { if (await onSave(tree)) setEditor(null); }} />}
   </section>;
 }
 
-function PersonalViewer({ tree, onClose }: { tree: PersonalTree; onClose: () => void }) {
-  const [index, setIndex] = useState(0);
+function PersonalViewer({ tree, start, onClose }: { tree: PersonalTree; start: number; onClose: () => void }) {
+  const [index, setIndex] = useState(Math.min(start, tree.fotos.length - 1));
   const step = (by: number) => setIndex(i => (i + by + tree.fotos.length) % tree.fotos.length);
   return <Modal title={tree.nome} onClose={onClose} wide>
     <div className="personal-viewer">
@@ -58,6 +86,7 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
   const [draft, setDraft] = useState(tree);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
+  const [adjusting, setAdjusting] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const set = <K extends keyof PersonalTree>(key: K, value: PersonalTree[K]) => setDraft(d => ({ ...d, [key]: value }));
   const add = async (files: FileList) => {
@@ -88,6 +117,7 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
         {draft.fotos.map((url, i) => <div key={url.slice(-24) + i} className={i === 0 ? 'is-cover' : ''}>
           <img src={url} alt={`Foto ${i + 1}`} />
           <span className="personal-editor-actions">
+            <button type="button" className="icon-button" title="Ajustar foto" aria-label={`Ajustar foto ${i + 1}`} onClick={() => setAdjusting(i)}><Crop size={14} /></button>
             {i > 0 && <button type="button" className="icon-button" title="Usar como capa" aria-label="Usar como capa" onClick={() => set('fotos', [url, ...draft.fotos.filter((_, k) => k !== i)])}><Star size={14} /></button>}
             <button type="button" className="icon-button danger" aria-label="Remover foto" onClick={() => set('fotos', draft.fotos.filter((_, k) => k !== i))}><X size={14} /></button>
           </span>
@@ -99,5 +129,6 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="editor-actions"><button type="button" className="button button-outline" onClick={onClose} disabled={busy}>Cancelar</button><button className="button button-gold" disabled={busy}>{saving ? 'Salvando…' : 'Salvar árvore'}</button></div>
     </form>
+    {adjusting !== null && draft.fotos[adjusting] && <PhotoAdjuster src={draft.fotos[adjusting]} title={`Ajustar foto ${adjusting + 1}`} onClose={() => setAdjusting(null)} onApply={url => { set('fotos', draft.fotos.map((f, k) => k === adjusting ? url : f)); setAdjusting(null); }} />}
   </Modal>;
 }

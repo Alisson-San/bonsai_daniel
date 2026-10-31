@@ -40,7 +40,8 @@ O `package-lock.json` registra as dependências instaladas. Mantenha-o no contro
 - Busca por nome/código/espécie, filtros por categoria/espécie/status, cards e galeria com botão de escala real.
 - Curadoria pelo cadeado no topo/rodapé: textos inline, cadastro, edição, duplicação, exclusão e alternância de status.
 - Upload de múltiplas fotos, drag-and-drop ou URL; seleção de capa e tags de ângulo; prévia no editor.
-- Criação de categorias e espécies nos filtros ou ao cadastrar um exemplar.
+- Categorias e espécies: na curadoria, "Gerenciar" (nos filtros de categoria) e "Gerenciar espécies" (em Filtros) criam, renomeiam e removem; renomear muda os exemplares que usam a categoria, e remover uma em uso pede para onde movê-los (espécie também pode ficar em branco). Também são criadas ao cadastrar um exemplar.
+- Visualização do catálogo: "Detalhada" (cards grandes) ou "Blocos" (grade enxuta, duas colunas no celular com foto, nome, preço e as duas ações). A escolha fica guardada no navegador.
 - IndexedDB, backup JSON validado e controle de revisão para impedir sobrescrita por uma aba desatualizada.
 - WhatsApp com mensagem contextual, preço e referência de foto; compartilhamento nativo com foto quando suportado, com alternativas de texto/download.
 
@@ -197,10 +198,39 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (depoimento, nome e cidade).
 - **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema sobe com a página encolhendo e esmaecendo (sem passar por trás do título) e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
 
+## Identidade visual e interações
+
+- **Brincar com a árvore 3D** (`BonsaiHero3D.tsx`, `touch`/`shake` em `bonsaiScene.ts`): passar o mouse ou o dedo pela copa afasta as folhas perto do ponto, que tremem, e solta algumas folhas pelo caminho; clicar ou tocar na copa dá um chacoalhão na árvore inteira (uma mola inclina e balança a árvore, a copa sacode) e cai uma chuva de folhas. No celular, deslizar o dedo para os lados mexe na copa e deslizar para cima ou para baixo continua rolando a página. Uma dica ("toque na árvore" / "passe o mouse pela copa") aparece uma vez por visita e some na primeira interação. Folhas extras caem uma vez só e somem, com limite de 48 ao mesmo tempo.
+- **Folhas que caem:** só dentro do topo. Poucas folhas (8 no computador, 5 no celular, 3 com movimento reduzido) se soltam da copa e descem planando de um lado para o outro, inclinando no balanço; somem antes do fim do topo e o desenho pausa quando o topo sai da tela.
+- **Títulos de seção:** traço de pincel dourado e rótulo (`SectionMark.tsx`).
+- **Categorias como plaquinhas penduradas** (`CategoryRope.tsx`): etiquetas de madeira presas numa corda, como num viveiro japonês. Balançam de leve com a brisa, balançam ao passar o mouse ou tocar, e a escolhida desce um pouco e fica dourada, com uma conta vermelha. No celular a corda rola para o lado.
+- **Busca como traço de pincel:** sem caixa; um traço dourado que se completa ao tocar no campo. "Refinar" abre os filtros de espécie e disponibilidade (o + gira e vira ×).
+- **Ensō na visualização:** "Detalhada" e "Blocos" são marcados por um círculo zen pintado a pincel, que se desenha ao escolher.
+- **Galho de navegação** (`BranchNav.tsx`, telas a partir de 1280 px): um galho fino na lateral cresce conforme a página rola; cada seção é uma folha de bordo, alternando os lados, que fica vermelha quando a seção é alcançada. Passar o mouse mostra o nome; clicar leva até a seção. Aparece depois do topo.
+- **Fotos reveladas por pincelada:** ao rolar, as fotos da coleção pessoal, dos prêmios, dos vendidos e do cultivador aparecem por uma pincelada (animação ligada à rolagem, nos navegadores que a suportam; nos outros, aparecem normalmente).
+- **Botões dourados e "Tenho interesse"** (`useButtonFlourish.ts`): no computador se inclinam alguns pixels em direção ao cursor; ao clicar, soltam algumas folhas de bordo.
+- **Tema:** começa no tema do sistema; o botão de sol/lua troca (o novo tema se espalha em círculo a partir do botão, onde o navegador suporta View Transitions) e a escolha fica guardada.
+- **Header** (`HeaderNav.tsx`): no computador, um traço de pincel dourado fica sob o link da seção em que você está e desliza até o link sob o mouse; em todas as telas, uma linha dourada na borda inferior do header cresce com a rolagem. No celular, o botão de menu desenrola um pergaminho japonês (kakejiku) com os links numerados, a vareta dourada descendo por último e uma borla vermelha; tocar num link, fora do pergaminho ou em Esc fecha.
+- **Ícone do navegador** (`public/favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-192/512.png`, `site.webmanifest`): a árvore e o vaso da logo oficial sobre o verde da logo, num aro dourado (o texto da logo não cabe em 16–32 px). Gerado por `python3 scripts/favicon.py public` (precisa do Pillow).
+
+## Ajuste de fotos
+
+Na curadoria, toda foto tem um botão **Ajustar** (ícone de recorte): galeria do exemplar, fotos da coleção pessoal, foto de exposição/prêmio ("Ajustar foto") e foto do cultivador. A ferramenta (`PhotoAdjuster.tsx`) permite:
+
+- **Proporção:** original, 1:1, 4:5, 3:4 ou 16:9;
+- **Enquadrar:** arrastar a foto para recentralizar, zoom pelo controle, pela roda do mouse ou com dois dedos, botão "Centralizar" (grade de terços aparece ao arrastar);
+- **Girar** 90° para cada lado, **endireitar** de −15° a +15° (a foto se amplia sozinha para não deixar cantos vazios) e **espelhar**;
+- **Brilho, contraste e saturação**;
+- "Restaurar" volta tudo ao original; dois cliques num controle o zeram.
+
+"Aplicar ajuste" grava uma nova imagem com o recorte e os ajustes (até 2000 px, sem ampliar além dos pixels da original; JPEG, ou WebP se tiver transparência), que sobe para o Storage ao salvar o cadastro, como uma foto nova. Fotos já no Storage abrem pelo CORS público do bucket.
+
 ## Coleção pessoal e exposições
 
-- **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Aparece na página inicial depois da coleção à venda; tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
-- **Exposições e prêmios** (`src/components/Awards.tsx`): cada registro tem ano, título, evento ou local e uma foto opcional (certificado, troféu ou a árvore na exposição). Na curadoria, "Adicionar exposição ou prêmio" abre um formulário, e cada card tem botões de editar e excluir; a lista se ordena do ano mais recente ao mais antigo. A página inicial mostra os 6 mais recentes com "Ver todos"; a biografia mostra todos. Fica no catálogo em `awards`. Prêmios cadastrados antes como texto e as fotos da antiga galeria da biografia são convertidos em registros automaticamente.
+**Ordem da página inicial:** topo, coleção à venda (o destaque), como funciona, o cultivador, coleção pessoal (4 árvores), exposições e prêmios (3 mais recentes), vendidos, depoimentos e contato. A coleção pessoal e os prêmios aparecem resumidos, com link para a página do cultivador (`/biografia`), onde ficam completos e em destaque: cada árvore numa linha grande com fotos e texto, alternando os lados, e os prêmios com foto numa galeria, seguidos dos registros sem foto em lista por ano.
+
+- **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
+- **Exposições e prêmios** (`src/components/Awards.tsx`): cada registro tem ano, título, evento ou local e uma foto opcional (certificado, troféu ou a árvore na exposição). Na curadoria, "Adicionar exposição ou prêmio" abre um formulário, e cada card tem botões de editar e excluir; a lista se ordena do ano mais recente ao mais antigo. Fica no catálogo em `awards`. Prêmios cadastrados antes como texto e as fotos da antiga galeria da biografia são convertidos em registros automaticamente.
 - **Listas curtas** (destaques e trajetória da biografia, passos da compra, depoimentos): na curadoria, cada item tem campos com nome e botões para adicionar, remover e reordenar (`src/components/RowsEditor.tsx`).
 
 ## Fotos

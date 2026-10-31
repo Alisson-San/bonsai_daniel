@@ -7,11 +7,12 @@ import PlantInline, { type SavePlantField } from './PlantInline';
 import Indicators from './Indicators';
 import WhatsAppIcon from './WhatsAppIcon';
 
-type Props = { plant: Plant; index: number; editing: boolean; onOpen: (source: HTMLElement | null) => void; onEdit: () => void; onDuplicate: () => void; onStatus: () => void; onDelete: () => void; onInterest: () => void; onSaveField: SavePlantField; onSaveIndicator: (key: keyof Levels, value: number) => void };
+type Props = { plant: Plant; index: number; editing: boolean; compact?: boolean; onOpen: (source: HTMLElement | null) => void; onEdit: () => void; onDuplicate: () => void; onStatus: () => void; onDelete: () => void; onInterest: () => void; onSaveField: SavePlantField; onSaveIndicator: (key: keyof Levels, value: number) => void };
 
 // With a cut-out showcase photo the plant stands on a stage; otherwise the real photo sits in a rounded frame, untouched.
 // The card shows only what decides a visit: name, a few facts, price and one action. Ratings live in the detail sheet.
-export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDuplicate, onStatus, onDelete, onInterest, onSaveField, onSaveIndicator }: Props) {
+// `compact` (the "Blocos" view): the real photo, name, price and the two actions, in a denser grid.
+export default function PlantCard({ plant, index, editing, compact = false, onOpen, onEdit, onDuplicate, onStatus, onDelete, onInterest, onSaveField, onSaveIndicator }: Props) {
  const reduced = useReducedMotion();
  const visual = useRef<HTMLDivElement>(null);
  // The photo opens up from a smaller window as it scrolls into view.
@@ -33,7 +34,7 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
  ].filter(Boolean) as string[];
  return <motion.article layout className={`plant-tile status-${plant.status}`} initial={reduced ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .12 }} transition={{ delay: Math.min(index % 3 * .12, .24), type: 'spring', stiffness: 300, damping: 30 }} exit={{ opacity: 0, scale: .96 }}>
   <div className={`tile-visual ${inView || reduced ? 'is-in' : ''}`} ref={visual}>
-   {plant.fotoVitrine
+   {plant.fotoVitrine && !compact
     ? <div className="vitrine-stage" onPointerMove={tilt} onPointerLeave={center}>
       <div className="vitrine-rig">
        <span className="vitrine-ring" aria-hidden="true" />
@@ -52,11 +53,11 @@ export default function PlantCard({ plant, index, editing, onOpen, onEdit, onDup
    <span className="eyebrow"><span>{plant.categoria}</span><span className="tile-code">{plant.codigo}</span></span>
    <h3 className="card-heading"><PlantInline plant={plant} field="nomePopular" editing={editing} onSave={onSaveField} /></h3>
    <p className="scientific"><PlantInline plant={plant} field="especieCientifica" editing={editing} onSave={onSaveField} /></p>
-   {(plant.descricao || editing) && <p className="card-description"><PlantInline plant={plant} field="descricao" editing={editing} onSave={onSaveField} /></p>}
-   {facts.length > 0 && <p className="tile-facts">{facts.join(' · ')}</p>}
-   {editing && <Indicators levels={indicatorsOf(plant)} editing={editing} onChange={onSaveIndicator} />}
+   {!compact && (plant.descricao || editing) && <p className="card-description"><PlantInline plant={plant} field="descricao" editing={editing} onSave={onSaveField} /></p>}
+   {facts.length > 0 && <p className="tile-facts">{(compact ? facts.slice(0, 2) : facts).join(' · ')}</p>}
+   {editing && !compact && <Indicators levels={indicatorsOf(plant)} editing={editing} onChange={onSaveIndicator} />}
    <p className="tile-price">{editing ? <PlantInline plant={plant} field="preco" editing={editing} onSave={onSaveField} /> : formatPrice(plant.preco)}</p>
-   <div className="tile-actions"><button className="button whatsapp-button" disabled={plant.status === 'vendido'} aria-label={`Tenho interesse em ${plant.codigo}, abrir WhatsApp`} onClick={onInterest}><WhatsAppIcon /><span>{plant.status === 'vendido' ? 'Exemplar vendido' : 'Tenho interesse'}</span></button><button className="text-link tile-details" onClick={open}>Ver detalhes<ArrowUpRight size={16} /></button></div>
+   <div className="tile-actions"><button className="button whatsapp-button" disabled={plant.status === 'vendido'} aria-label={`Tenho interesse em ${plant.codigo}, abrir WhatsApp`} onClick={onInterest}><WhatsAppIcon /><span>{plant.status === 'vendido' ? (compact ? 'Vendido' : 'Exemplar vendido') : (compact ? 'Interesse' : 'Tenho interesse')}</span></button><button className="text-link tile-details" onClick={open}>{compact ? 'Detalhes' : 'Ver detalhes'}<ArrowUpRight size={16} /></button></div>
   </div>
  </motion.article>;
 }
