@@ -198,6 +198,14 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (depoimento, nome e cidade).
 - **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema sobe com a página encolhendo e esmaecendo (sem passar por trás do título) e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
 
+## Identidade visual: selos, plaquinhas, pincel e ensō
+
+- **Selo hanko** (`src/components/SectionMark.tsx`): cada seção abre com o carimbo vermelho com que mestres japoneses assinam suas obras, com o kanji da seção (盆栽 coleção, 道 como funciona, 匠 cultivador, 蔵 coleção pessoal, 誉 prêmios, 家 vendidos, 声 depoimentos, 縁 contato; na biografia 伝記, 語, 歩). O selo é "carimbado" ao entrar na tela (desce, pressiona e assenta torto) e tem textura de tinta gasta. A fonte (Shippori Mincho) baixa só esses caracteres: um kanji novo precisa entrar também no link em `index.html`.
+- **Categorias como plaquinhas penduradas** (`src/components/CategoryRope.tsx`): etiquetas de madeira presas numa corda, como num viveiro japonês. Balançam de leve com a brisa, balançam ao passar o mouse ou tocar, e a escolhida desce um pouco e fica dourada, com uma conta vermelha. No celular a corda rola para o lado. A corda substitui a linha divisória acima dos filtros.
+- **Busca como traço de pincel:** sem caixa; um traço dourado que se completa ao tocar no campo. "Refinar" abre os filtros de espécie e disponibilidade (o + gira e vira ×).
+- **Ensō na visualização:** "Detalhada" e "Blocos" são marcados por um círculo zen pintado a pincel, que se desenha ao escolher.
+- **Folhas que caem:** só dentro do topo. Poucas folhas (8 no computador, 5 no celular, 3 com movimento reduzido) se soltam da copa e descem planando de um lado para o outro, inclinando no balanço; somem antes do fim do topo e o desenho pausa quando o topo sai da tela.
+
 ## Coleção pessoal e exposições
 
 **Ordem da página inicial:** topo, coleção à venda (o destaque), como funciona, o cultivador, coleção pessoal (4 árvores), exposições e prêmios (3 mais recentes), vendidos, depoimentos e contato. A coleção pessoal e os prêmios aparecem resumidos, com link para a página do cultivador (`/biografia`), onde ficam completos e em destaque: cada árvore numa linha grande com fotos e texto, alternando os lados, e os prêmios com foto numa galeria, seguidos dos registros sem foto em lista por ano.

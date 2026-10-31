@@ -353,13 +353,7 @@
 .rows-editor-footer .text-link{margin:0;display:inline-flex;align-items:center;gap:6px}
 .bio-edit-block .rows-editor{margin-top:4px}
 
-/* ---- Catalog view: "Detalhada" (large cards) or "Blocos" (dense grid) ---- */
-.results-line{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.results-line>.results-note{margin-left:auto}
-.view-toggle{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:999px;gap:2px}
-.view-toggle button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:none;color:var(--muted);font-size:12px;letter-spacing:.2px}
-.view-toggle button:hover{color:var(--text)}
-.view-toggle button.selected{background:var(--gold);color:#13140d}
+/* ---- Catalog view: "Blocos" (dense grid) ---- */
 .plant-grid.tile-grid.is-compact{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:44px 22px}
 .is-compact .arch-frame,.tile-grid.is-compact>.add-card{border-radius:calc(var(--radius-lg) - 8px)}
 .is-compact .tile-visual>.status{top:10px;left:10px;padding:5px 10px;font-size:10px}
@@ -377,8 +371,6 @@
 .is-compact .tile-actions .tile-details{font-size:12px}
 .tile-grid.is-compact>.add-card h3{font-size:24px}
 @media(max-width:580px){
- .results-line>.results-note{display:none}
- .view-toggle button{min-height:34px;padding:0 11px}
  .plant-grid.tile-grid.is-compact{grid-template-columns:1fr 1fr;gap:32px 12px}
  .is-compact .tile-body .card-heading{font-size:19px}
  .is-compact .tile-body .scientific,.is-compact .tile-facts{font-size:11px}
@@ -390,7 +382,6 @@
 }
 
 /* ---- Curation: category and species manager ---- */
-.category-filters>button.tag-manage{border:1px dashed var(--line);color:var(--gold)}
 .tag-manager{display:flex;flex-direction:column;gap:14px}
 .tag-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .tag-list li{border:1px solid var(--line);border-radius:var(--radius);padding:8px}
@@ -461,4 +452,104 @@
  .award-shot,.awards-gallery>.award-shot:nth-of-type(3n+1){min-height:300px}
  .awards-list li{grid-template-columns:1fr auto;gap:6px 16px}
  .awards-list li>.awards-year{grid-column:1/-1}
+}
+
+/* ==== Identity: hanko seals, hanging category tags, brush search and the ensō view toggle ==== */
+:root,[data-theme="dark"]{--hanko:#B8232C;--hanko-ink:#fbefe6;--rope:rgba(212,175,55,.62);--plate:#18291d;--plate-edge:rgba(212,175,55,.42);--plate-shadow:rgba(0,0,0,.45)}
+[data-theme="light"]{--hanko:#B3212B;--hanko-ink:#fff6ee;--rope:rgba(140,108,30,.6);--plate:#f1e7d1;--plate-edge:rgba(158,123,28,.5);--plate-shadow:rgba(70,52,18,.22)}
+
+/* Section opener: the seal, a brush stroke and the label. */
+.section-mark{display:flex;align-items:center;gap:14px}
+.hanko{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:38px;min-height:38px;padding:6px 7px;background:var(--hanko);color:var(--hanko-ink);font-family:'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho','Noto Serif JP','Noto Serif CJK JP',serif;font-weight:800;font-size:17px;line-height:1.05;border-radius:4px 6px 3px 7px;box-shadow:inset 0 0 0 2px var(--hanko),inset 0 0 0 3px var(--hanko-ink);
+ -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 2.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.6 2.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");rotate:-4deg}
+.hanko>span{display:block}
+.section-mark-line{width:52px;height:5px;background:var(--gold);opacity:.7;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.4C25 1.6 60 2.2 99 2.8 60 4.4 30 4.9 1 4.2Z'/%3E%3C/svg%3E") 0 0/100% 100%;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.4C25 1.6 60 2.2 99 2.8 60 4.4 30 4.9 1 4.2Z'/%3E%3C/svg%3E") 0 0/100% 100%}
+.section-mark .eyebrow{margin:0}
+.section-heading .section-mark+h2,.purchase>.section-mark+h2,.awards .section-mark+h2,.sold-heading>.section-mark+h2,.cultivator-copy>.section-mark+h2,.feature-heading>.section-mark+h2,.contact>.section-mark+h2,.bio-timeline>.section-mark+h2,.bio-cta>.section-mark+h2{margin-top:22px}
+.feature-heading>.section-mark,.testimonials>.section-mark,.contact>.section-mark,.bio-cta>.section-mark{justify-content:center}
+.bio-intro>.section-mark{margin-bottom:6px}
+.bio-story .section-mark{margin-bottom:8px}
+
+/* Category filter: wooden tags hanging from a rope. The rope replaces the divider line above the filters. */
+.catalog-toolbar{border-top:0;padding-top:0;row-gap:18px}
+.category-rope{flex:1 1 100%;display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;padding:2px 2px 30px;margin:0 -2px -8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.category-rope::-webkit-scrollbar{display:none}
+.rope-tag{position:relative;flex:1 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 12px;border:0;background:none;color:inherit;cursor:pointer;min-height:0}
+.rope-tag::before{content:"";position:absolute;left:-3px;top:-1px;width:6px;height:6px;border-radius:50%;background:var(--rope);z-index:1}
+.rope-tag:last-child::after{content:"";position:absolute;right:-3px;top:-1px;width:6px;height:6px;border-radius:50%;background:var(--rope)}
+.rope-segment{position:absolute;left:0;right:0;top:0;height:16px;background:var(--rope);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16' preserveAspectRatio='none'%3E%3Cpath d='M0 2Q50 22 100 2' fill='none' stroke='%23000' stroke-width='1.4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16' preserveAspectRatio='none'%3E%3Cpath d='M0 2Q50 22 100 2' fill='none' stroke='%23000' stroke-width='1.4' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
+.rope-hang{position:relative;display:block;margin-top:11px;padding-top:15px;transform-origin:50% 0;filter:drop-shadow(0 8px 10px var(--plate-shadow));animation:rope-breeze 7s ease-in-out infinite}
+.rope-tag:nth-child(3n+2) .rope-hang{animation-duration:8.6s;animation-delay:-2.4s}
+.rope-tag:nth-child(3n) .rope-hang{animation-duration:6.3s;animation-delay:-4.1s}
+.rope-hang::before{content:"";position:absolute;left:50%;top:0;width:1px;height:22px;background:var(--rope);z-index:2}
+.rope-plate{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:84px;padding:17px 18px 11px;clip-path:polygon(0 10px,50% 0,100% 10px,100% 100%,0 100%);background:var(--plate-edge);transition:translate .5s cubic-bezier(.2,.8,.3,1)}
+.rope-plate::before{content:"";position:absolute;inset:1px;clip-path:polygon(0 10px,50% 0,100% 10px,100% 100%,0 100%);background:repeating-linear-gradient(93deg,transparent 0 9px,rgba(255,255,255,.035) 9px 10px,transparent 10px 17px,rgba(0,0,0,.05) 17px 18px),var(--plate);transition:background .4s}
+.rope-plate::after{content:"";position:absolute;left:50%;top:6px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 1px rgba(0,0,0,.4)}
+.rope-plate>*{position:relative}
+.rope-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:600;line-height:1.1;color:var(--text);white-space:nowrap;transition:color .3s}
+.rope-count{font-size:10px;letter-spacing:1.5px;color:var(--muted);font-feature-settings:"lnum" 1,"tnum" 1;transition:color .3s}
+.rope-tag:hover .rope-hang,.rope-tag:focus-visible .rope-hang{animation:rope-swing 1.6s cubic-bezier(.25,.7,.35,1)}
+.rope-tag.selected .rope-hang{animation:rope-pick 1.9s cubic-bezier(.25,.7,.35,1)}
+.rope-tag.selected .rope-hang::before{height:28px}
+.rope-tag.selected .rope-plate{translate:0 6px;background:var(--gold)}
+.rope-tag.selected .rope-plate::before{background:repeating-linear-gradient(93deg,transparent 0 9px,rgba(255,255,255,.12) 9px 10px,transparent 10px 18px),linear-gradient(160deg,#D4AF37,#F3E5AB 55%,#D4AF37)}
+.rope-tag.selected .rope-plate::after{background:#D9232E;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.rope-tag.selected .rope-name{color:#13200f}
+.rope-tag.selected .rope-count{color:#4a3d12}
+.rope-tag:focus-visible{outline:none}
+.rope-tag:focus-visible .rope-plate::before{box-shadow:inset 0 0 0 2px var(--gold)}
+.rope-manage .rope-plate{flex-direction:row;gap:7px;padding-top:18px;color:var(--gold)}
+.rope-manage .rope-plate::before{background:var(--bg)}
+.rope-manage .rope-name{color:var(--gold);font-size:16px}
+@keyframes rope-breeze{0%,100%{rotate:0deg}25%{rotate:1.1deg}75%{rotate:-1.1deg}}
+@keyframes rope-swing{0%{rotate:0deg}18%{rotate:8deg}40%{rotate:-5.5deg}60%{rotate:3deg}78%{rotate:-1.2deg}100%{rotate:0deg}}
+@keyframes rope-pick{0%{rotate:0deg}14%{rotate:-11deg}34%{rotate:7deg}54%{rotate:-3.5deg}74%{rotate:1.4deg}100%{rotate:0deg}}
+
+/* Search: a brush stroke instead of a box; it is painted across as the field takes focus. */
+.search-row{flex:1 1 auto;justify-content:flex-start;align-items:flex-end;gap:28px}
+.search-box{position:relative;flex:1;max-width:460px;height:50px;padding:0 2px 6px;border:0;border-radius:0;background:none;color:var(--muted);gap:12px}
+.search-box input{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:21px;color:var(--text);height:40px}
+.search-box input::placeholder{color:var(--muted);opacity:.8}
+.search-box:focus-within{border:0}
+.brush-line{position:absolute;left:0;right:0;bottom:0;height:7px;background:var(--gold);opacity:.45;transform:scaleX(.42);transform-origin:0 50%;transition:transform .9s cubic-bezier(.6,.05,.25,1),opacity .4s;pointer-events:none;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 8' preserveAspectRatio='none'%3E%3Cpath d='M1 4.6C40 2.4 120 3.4 299 3 180 5.4 90 7.2 1 6.2Z'/%3E%3C/svg%3E") 0 0/100% 100%;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 8' preserveAspectRatio='none'%3E%3Cpath d='M1 4.6C40 2.4 120 3.4 299 3 180 5.4 90 7.2 1 6.2Z'/%3E%3C/svg%3E") 0 0/100% 100%}
+.search-box:hover .brush-line{transform:scaleX(.6);opacity:.6}
+.search-box:focus-within .brush-line{transform:scaleX(1);opacity:.9}
+.filter-toggle{height:auto;min-height:44px;padding:0 2px;border:0;border-radius:0;background:none;color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:20px;gap:10px}
+.filter-toggle.selected{border:0;color:var(--gold)}
+.filter-toggle-icon{position:relative;width:12px;height:12px;transition:rotate .5s cubic-bezier(.3,1.4,.5,1)}
+.filter-toggle-icon::before,.filter-toggle-icon::after{content:"";position:absolute;left:0;top:5.5px;width:12px;height:1.2px;background:currentColor}
+.filter-toggle-icon::after{rotate:90deg}
+.filter-toggle.selected .filter-toggle-icon{rotate:135deg}
+
+/* Results: the count set large, and the view toggle marked by an ensō (the Zen brush circle). */
+.results-line{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:28px}
+.results-count{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 8px;margin:0;font-size:14px;color:var(--muted)}
+.results-count strong{font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;font-weight:500;line-height:1;color:var(--gold-bright);font-feature-settings:"lnum" 1}
+.results-count em{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:var(--muted)}
+.results-count em::before{content:"— ";opacity:.6}
+.view-toggle{display:inline-flex;gap:18px}
+.view-toggle button{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:var(--muted);font-size:13px;letter-spacing:.3px;transition:color .3s}
+.view-toggle button:hover,.view-toggle button.selected{color:var(--text)}
+.enso-mark{position:relative;display:grid;place-items:center;width:38px;height:38px}
+.enso-mark>.enso{position:absolute;inset:0;width:100%;height:100%;overflow:visible;rotate:-75deg}
+.enso-mark circle{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;stroke-dasharray:88 101;stroke-dashoffset:88;transition:stroke-dashoffset .9s cubic-bezier(.6,.05,.3,1)}
+.view-toggle button:hover circle{stroke-dashoffset:70}
+.view-toggle button.selected circle{stroke-dashoffset:0}
+.view-toggle button.selected .enso-mark>.enso+svg{color:var(--gold)}
+
+@media(max-width:580px){
+ .category-rope{margin:0 -6vw -8px;padding:2px 6vw 28px}
+ .rope-tag{flex-grow:0;padding:0 9px}
+ .rope-plate{min-width:72px;padding:16px 14px 10px}
+ .rope-name{font-size:16px}
+ .search-row{gap:16px}
+ .search-box input{font-size:18px}
+ .filter-toggle{font-size:18px}
+ .results-count strong{font-size:34px}
+ .results-count em{display:none}
+ .view-toggle{gap:10px}
+ .view-toggle button>span:last-child{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .rope-hang,.rope-tag:hover .rope-hang,.rope-tag.selected .rope-hang{animation:none}
 }

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ImagePlus, Pencil, Plus, Star, Trash2, X } from 
 import Modal from './Modal';
 import { fileToImage } from '../lib/media';
 import { personalSchema, type PersonalTree } from '../lib/schema';
+import SectionMark from './SectionMark';
 
 const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .2 } };
 const MAX_PHOTOS = 12;
@@ -28,8 +29,8 @@ export function PersonalCollection({ trees, editing, saving, limit, feature = fa
   const meta = (tree: PersonalTree) => [tree.especie, tree.idade].filter(Boolean).join(' · ');
   return <section className={`personal section-shell ${feature ? 'is-feature' : ''}`} id="colecao-pessoal">
     {feature
-      ? <div className="feature-heading"><span className="eyebrow">COLEÇÃO PESSOAL</span><h2>Árvores que ficam<br />com o cultivador.</h2><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>
-      : <div className="section-heading"><div><span className="eyebrow">COLEÇÃO PESSOAL</span><h2>Árvores que ficam<br />com o cultivador.</h2></div><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>}
+      ? <div className="feature-heading"><SectionMark kanji="蔵" label="COLEÇÃO PESSOAL" /><h2>Árvores que ficam<br />com o cultivador.</h2><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>
+      : <div className="section-heading"><div><SectionMark kanji="蔵" label="COLEÇÃO PESSOAL" /><h2>Árvores que ficam<br />com o cultivador.</h2></div><p>Exemplares que não estão à venda: anos de trabalho, mostrados como inspiração.</p></div>}
     {feature ? <div className="personal-feature">
       {add}
       {shown.map((tree, i) => <motion.article key={tree.id} className="personal-row" {...(reduced ? {} : reveal)}>

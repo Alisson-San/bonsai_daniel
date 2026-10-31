@@ -4,6 +4,7 @@ import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
 import { fileToImage } from '../lib/media';
 import { awardSchema, type Award } from '../lib/schema';
+import SectionMark from './SectionMark';
 
 const reveal = { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .2 } };
 // Newest first; items without a year after the dated ones, in the order they were added.
@@ -39,7 +40,7 @@ export default function Awards({ awards, editing, saving, limit, feature = false
   const withPhoto = shown.filter(a => a.foto), withoutPhoto = shown.filter(a => !a.foto);
   return <section className={`awards section-shell ${feature ? 'is-feature' : ''}`} id="premios">
     <div className={feature ? 'feature-heading' : ''}>
-      <span className="eyebrow">EXPOSIÇÕES E PRÊMIOS</span>
+      <SectionMark kanji="誉" label="EXPOSIÇÕES E PRÊMIOS" />
       <h2>Reconhecimento<br />em cada estação.</h2>
       {feature && all.length > 0 && <p>{all.length} registro{all.length === 1 ? '' : 's'} de exposições, prêmios e encontros{years.length ? `, desde ${Math.min(...years)}` : ''}.</p>}
     </div>

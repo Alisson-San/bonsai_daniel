@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import type { Settings } from '../lib/schema';
 import RowsEditor from './RowsEditor';
+import SectionMark from './SectionMark';
 
 type BioText = 'bioPageLead' | 'bioStory';
 type Props = {
@@ -27,7 +28,7 @@ export default function Biography({ settings: s, editing, saving, personal, awar
         <img src={s.fotoCultivador ?? '/images/bonsai_01.jpeg'} alt="Daniel Bourscheid e seu trabalho de cultivo" />
       </motion.div>
       <motion.div className="bio-intro" initial={reduced ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .9, delay: .15, ease: [.16, 1, .3, 1] }}>
-        <span className="eyebrow">BIOGRAFIA</span>
+        <SectionMark kanji="伝記" label="BIOGRAFIA" />
         <h1>Daniel Bourscheid</h1>
         <p className="bio-lead">{inline('bioPageLead', 'apresentação da biografia', true)}</p>
       </motion.div>
@@ -40,7 +41,7 @@ export default function Biography({ settings: s, editing, saving, personal, awar
 
     {(paragraphs.length > 0 || editing) && <section className="bio-story section-shell">
       <motion.div {...motionProps}>
-        <span className="eyebrow">A HISTÓRIA</span>
+        <SectionMark kanji="語" label="A HISTÓRIA" />
         {editing ? <div className="bio-edit-block"><small>Texto da história; separe os parágrafos com uma linha em branco.</small>{inline('bioStory', 'história', true)}</div>
           : paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'bio-first' : ''}>{p}</p>)}
       </motion.div>
@@ -51,14 +52,14 @@ export default function Biography({ settings: s, editing, saving, personal, awar
     {awards}
 
     {(milestones.length > 0 || editing) && <section className="bio-timeline section-shell">
-      <span className="eyebrow">TRAJETÓRIA</span>
+      <SectionMark kanji="歩" label="TRAJETÓRIA" />
       <h2>Marcos de uma vida no bonsai.</h2>
       {editing ? <div className="bio-edit-block"><small>Marcos da trajetória, em ordem</small><RowsEditor value={s.bioMilestones} saving={saving} addLabel="Adicionar marco" fields={[{ label: 'Ano', placeholder: '2010', width: 'narrow' }, { label: 'Título', placeholder: 'Primeiro bonsai' }, { label: 'Texto', placeholder: 'Opcional', long: true }]} onSave={value => onSaveList('bioMilestones', value)} /></div>
         : <ol>{milestones.map(([year, title, text], i) => <motion.li key={i} {...motionProps}><span className="bio-year">{year}</span><div><strong>{title}</strong>{text && <p>{text}</p>}</div></motion.li>)}</ol>}
     </section>}
 
     <section className="bio-cta section-shell">
-      <span className="eyebrow">A COLEÇÃO</span>
+      <SectionMark kanji="盆栽" label="A COLEÇÃO" />
       <h2>Cada exemplar carrega<br />anos de cuidado.</h2>
       <a className="button button-gold" href="/#colecao" data-route>Ver a coleção <ArrowUpRight size={18} /></a>
     </section>

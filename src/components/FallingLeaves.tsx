@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef } from 'react';
 import { palmateLeaf } from '../lib/acer';
 import type { PageRect } from '../lib/bonsaiScene';
 
-// Depth layers: far leaves are small and faded, near ones large, blurred and faster (parallax).
+// Depth layers: far leaves are small and faded, near ones larger and softly blurred.
 const layers = [
- { size: [18, 24], alpha: .6, fall: 34, blur: 0 },
- { size: [28, 36], alpha: .95, fall: 50, blur: 0 },
- { size: [50, 64], alpha: .85, fall: 80, blur: 2.5 },
+ { size: [16, 22], alpha: .5, fall: 22, blur: 0 },
+ { size: [24, 32], alpha: .9, fall: 30, blur: 0 },
+ { size: [40, 50], alpha: .75, fall: 42, blur: 2 },
 ];
-const colors = ['#D9232E', '#D9232E', '#C41E29', '#B81D27'];
+const colors = ['#D9232E', '#C41E29', '#B81D27', '#cf3a2a'];
 
 function sprite(color: string, blur: number) {
  const size = 112, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
@@ -24,58 +23,58 @@ function sprite(color: string, blur: number) {
  return canvas;
 }
 
-// A few maple leaves falling from the 3D crown over the whole page, above all content.
-// The canvas never takes pointer events, so links, buttons and text selection keep working.
+// A few maple leaves let go of the 3D crown and drift down through the hero only: the canvas fills the hero section,
+// leaves fade out before its bottom edge and nothing is drawn while the hero is off screen. Each leaf glides like a
+// real one, swinging side to side, tilting into the swing and slowing at each end of it.
 export default function FallingLeaves({ source }: { source: { current: PageRect | null } }) {
  const ref = useRef<HTMLCanvasElement>(null);
- // The portal needs document.body, so it only mounts in the browser (the page is also prerendered).
- const [mounted, setMounted] = useState(false);
- useEffect(() => setMounted(true), []);
  useEffect(() => {
-  const canvas = ref.current, context = canvas?.getContext('2d');
-  if (!canvas || !context) return;
+  const canvas = ref.current, context = canvas?.getContext('2d'), hero = canvas?.parentElement;
+  if (!canvas || !context || !hero) return;
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const sprites = layers.map(layer => colors.map(color => sprite(color, layer.blur)));
-  // With reduced motion, fewer leaves fall, slower and only the small far and mid layers.
-  const count = (innerWidth < 760 ? 10 : 18) / (media.matches ? 2 : 1);
-  type Leaf = { x: number; y: number; startY: number; size: number; layer: number; sprite: HTMLCanvasElement; phase: number; sway: number; spin: number; rotation: number; flip: number; wait: number };
+  type Leaf = { x: number; y: number; age: number; size: number; layer: number; sprite: HTMLCanvasElement; phase: number; swing: number; amp: number; drift: number; spin: number; rotation: number; flip: number; wait: number };
   const leaves: Leaf[] = [];
+  let width = 0, height = 0;
+  // Hero-local coordinates: the crown rectangle comes in page coordinates.
   const spawn = (leaf: Partial<Leaf>, wait: number) => {
-   const rect = source.current, layer = leaf.layer ?? 0, [min, max] = layers[layer].size;
+   const crown = source.current, box = hero.getBoundingClientRect(), left = box.left + scrollX, top = box.top + scrollY;
+   const layer = leaf.layer ?? 1, [min, max] = layers[layer].size;
    // Mostly from the right side of the crown, as in the logo.
-   const x = rect ? rect.x + rect.width * (Math.random() < .75 ? .5 + Math.random() * .5 : Math.random()) : -100;
-   let y = rect ? rect.y + rect.height * (.25 + Math.random() * .6) : -100;
-   // Once the crown has scrolled away, leaves enter from just above the viewport, as if still falling from it.
-   const top = scrollY - 40;
-   if (rect && y < top) y = top - rect.y < innerHeight * 2.4 ? top - Math.random() * 60 : -1e5;
-   return Object.assign(leaf, { x, y, startY: rect ? rect.y : y, size: min + Math.random() * (max - min), sprite: sprites[layer][Math.floor(Math.random() * colors.length)], phase: Math.random() * 6.28, sway: 18 + Math.random() * 30, spin: (Math.random() - .5) * 1.4, rotation: Math.random() * 6.28, flip: .6 + Math.random() * 1.2, wait }) as Leaf;
+   const x = crown ? crown.x - left + crown.width * (Math.random() < .7 ? .5 + Math.random() * .45 : .1 + Math.random() * .4) : width * (.45 + Math.random() * .5);
+   const y = crown ? crown.y - top + crown.height * (.3 + Math.random() * .4) : height * .1;
+   return Object.assign(leaf, { x, y, age: 0, size: min + Math.random() * (max - min), sprite: sprites[layer][Math.floor(Math.random() * colors.length)], phase: Math.random() * 6.28, swing: .7 + Math.random() * .5, amp: 22 + Math.random() * 26, drift: 4 + Math.random() * 8, spin: (Math.random() - .5) * .5, rotation: Math.random() * 6.28, flip: .35 + Math.random() * .5, wait }) as Leaf;
   };
-  // Mostly mid-depth leaves, a few far ones and two or three large ones right in front.
   const calm = media.matches, pace = calm ? .6 : 1;
-  for (let i = 0; i < count; i++) leaves.push(spawn({ layer: !calm && (i < 2 || (count > 10 && i === 2)) ? 2 : i % 3 === 0 ? 0 : 1 }, 1.6 + Math.random() * 6));
-  let frame = 0, previous = 0, width = 0, height = 0, time = 0;
+  const count = calm ? 3 : innerWidth < 760 ? 5 : 8;
+  // Mostly mid-depth leaves, a couple far away and one large one in front (none with reduced motion).
+  for (let i = 0; i < count; i++) leaves.push(spawn({ layer: !calm && i === 0 ? 2 : i % 3 === 1 ? 0 : 1 }, 1.2 + i * 1.6 + Math.random() * 2.5));
+  let frame = 0, previous = 0, visible = true;
   const resize = () => {
    const dpr = Math.min(devicePixelRatio || 1, 2);
-   width = innerWidth; height = innerHeight;
+   width = hero.clientWidth; height = hero.clientHeight;
    canvas.width = width * dpr; canvas.height = height * dpr; context.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   const draw = (now: number) => {
    frame = 0;
    // Waits run on wall-clock time; motion steps are capped so a slow frame never teleports a leaf.
-   const real = previous ? (now - previous) / 1000 : 0, dt = Math.min(real, .1); previous = now; time += dt;
+   const real = previous ? (now - previous) / 1000 : 0, dt = Math.min(real, .1); previous = now;
    context.clearRect(0, 0, width, height);
    for (const leaf of leaves) {
     if (leaf.wait > 0) { leaf.wait -= real; if (leaf.wait <= 0) spawn(leaf, 0); continue; }
     const layer = layers[leaf.layer];
-    leaf.y += layer.fall * pace * dt; leaf.x += (Math.sin(time * .9 + leaf.phase) * leaf.sway + 6) * pace * dt; leaf.rotation += leaf.spin * pace * dt;
-    // Each leaf falls past the first cards (about 2.6 screens below the crown), then rests before falling again.
-    if (leaf.y - leaf.startY > height * 2.6) { spawn(leaf, 1 + Math.random() * 4); continue; }
-    const sx = leaf.x - scrollX, sy = leaf.y - scrollY, crown = source.current;
-    // Leaves left behind above the viewport re-enter at its top while the crown is scrolled away.
-    if (sy < -120 && crown && crown.y + crown.height < scrollY) { spawn(leaf, 0); continue; }
-    if (sx < -60 || sx > width + 60 || sy < -60 || sy > height + 60) continue;
-    context.save(); context.globalAlpha = layer.alpha; context.translate(sx, sy); context.rotate(leaf.rotation);
-    context.scale(Math.max(.18, Math.abs(Math.cos(time * leaf.flip + leaf.phase))), 1);
+    leaf.age += dt * pace;
+    const angle = leaf.age * leaf.swing + leaf.phase, sway = Math.cos(angle);
+    // Faster through the middle of the swing, almost hovering at its ends.
+    leaf.y += layer.fall * pace * dt * (.45 + .75 * Math.abs(sway));
+    leaf.x += (sway * leaf.amp * leaf.swing + leaf.drift) * pace * dt;
+    leaf.rotation += leaf.spin * pace * dt;
+    // Fades in as it lets go of the crown and out over the last quarter of the hero.
+    const fade = Math.min(1, leaf.age / .8, (height * .92 - leaf.y) / (height * .25));
+    if (fade <= 0 || leaf.x > width + 60) { spawn(leaf, 2 + Math.random() * 5); continue; }
+    context.save(); context.globalAlpha = layer.alpha * fade; context.translate(leaf.x, leaf.y);
+    context.rotate(leaf.rotation + sway * .55);
+    context.scale(.35 + .65 * Math.abs(Math.cos(leaf.age * leaf.flip + leaf.phase)), 1);
     context.drawImage(leaf.sprite, -leaf.size / 2, -leaf.size / 2, leaf.size, leaf.size);
     context.restore();
    }
@@ -83,12 +82,14 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
   };
   const start = () => {
    cancelAnimationFrame(frame); frame = 0; previous = 0;
-   if (document.hidden) { context.clearRect(0, 0, width, height); return; }
+   if (document.hidden || !visible) return;
    frame = requestAnimationFrame(draw);
   };
-  resize(); start();
-  addEventListener('resize', resize); document.addEventListener('visibilitychange', start); media.addEventListener('change', start);
-  return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); document.removeEventListener('visibilitychange', start); media.removeEventListener('change', start); };
- }, [source, mounted]);
- return mounted && createPortal(<canvas ref={ref} className="falling-leaves" aria-hidden="true" />, document.body);
+  const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; start(); });
+  const sizes = new ResizeObserver(resize);
+  resize(); observer.observe(hero); sizes.observe(hero);
+  document.addEventListener('visibilitychange', start);
+  return () => { cancelAnimationFrame(frame); observer.disconnect(); sizes.disconnect(); document.removeEventListener('visibilitychange', start); };
+ }, [source]);
+ return <canvas ref={ref} className="falling-leaves" aria-hidden="true" />;
 }
