@@ -6,7 +6,7 @@ import RowsEditor from './RowsEditor';
 
 type BioText = 'bioPageLead' | 'bioStory';
 type Props = {
-  settings: Settings; editing: boolean; saving: boolean; awards: ReactNode;
+  settings: Settings; editing: boolean; saving: boolean; personal: ReactNode; awards: ReactNode;
   inline: (key: BioText, label: string, multiline?: boolean) => ReactNode;
   onSaveList: (key: 'bioHighlights' | 'bioMilestones', value: string) => Promise<boolean>;
 };
@@ -14,9 +14,9 @@ type Props = {
 const lines = (text: string) => text.split('\n').map(line => line.split('|').map(part => part.trim())).filter(parts => parts[0]);
 const reveal = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: .2 } };
 
-// The cultivator's own page: portrait and lead, highlights, exhibitions and awards, story and milestones.
+// The cultivator's own page: portrait and lead, highlights, story, personal collection, exhibitions and awards, milestones.
 // Every block is edited in place by the curator; empty blocks stay hidden for visitors.
-export default function Biography({ settings: s, editing, saving, awards, inline, onSaveList }: Props) {
+export default function Biography({ settings: s, editing, saving, personal, awards, inline, onSaveList }: Props) {
   const reduced = useReducedMotion();
   const motionProps = reduced ? {} : reveal;
   const highlights = lines(s.bioHighlights), milestones = lines(s.bioMilestones);
@@ -38,8 +38,6 @@ export default function Biography({ settings: s, editing, saving, awards, inline
         : highlights.map(([title, detail], i) => <motion.div key={i} className="bio-highlight" {...motionProps} transition={{ delay: i * .1 }}><strong>{title}</strong>{detail && <span>{detail}</span>}</motion.div>)}
     </section>}
 
-    {awards}
-
     {(paragraphs.length > 0 || editing) && <section className="bio-story section-shell">
       <motion.div {...motionProps}>
         <span className="eyebrow">A HISTÓRIA</span>
@@ -47,6 +45,10 @@ export default function Biography({ settings: s, editing, saving, awards, inline
           : paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'bio-first' : ''}>{p}</p>)}
       </motion.div>
     </section>}
+
+    {personal}
+
+    {awards}
 
     {(milestones.length > 0 || editing) && <section className="bio-timeline section-shell">
       <span className="eyebrow">TRAJETÓRIA</span>

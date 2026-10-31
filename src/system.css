@@ -352,3 +352,113 @@
 .rows-editor-footer>span{display:flex;align-items:center;gap:16px}
 .rows-editor-footer .text-link{margin:0;display:inline-flex;align-items:center;gap:6px}
 .bio-edit-block .rows-editor{margin-top:4px}
+
+/* ---- Catalog view: "Detalhada" (large cards) or "Blocos" (dense grid) ---- */
+.results-line{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.results-line>.results-note{margin-left:auto}
+.view-toggle{display:inline-flex;padding:3px;border:1px solid var(--line);border-radius:999px;gap:2px}
+.view-toggle button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:none;color:var(--muted);font-size:12px;letter-spacing:.2px}
+.view-toggle button:hover{color:var(--text)}
+.view-toggle button.selected{background:var(--gold);color:#13140d}
+.plant-grid.tile-grid.is-compact{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:44px 22px}
+.is-compact .arch-frame,.tile-grid.is-compact>.add-card{border-radius:calc(var(--radius-lg) - 8px)}
+.is-compact .tile-visual>.status{top:10px;left:10px;padding:5px 10px;font-size:10px}
+.is-compact .tile-visual>.card-admin{top:8px;right:8px;padding:3px;gap:2px}
+.is-compact .tile-visual>.card-admin .icon-button{width:30px;height:30px}
+.is-compact .tile-body{padding-top:16px}
+.is-compact .tile-body .eyebrow{font-size:10px;letter-spacing:1.6px}
+.is-compact .tile-body .eyebrow>span:first-child{white-space:normal;overflow-wrap:anywhere}
+.is-compact .tile-body .card-heading{font-size:24px;margin:6px 0 2px}
+.is-compact .tile-body .scientific{font-size:13px}
+.is-compact .tile-facts{margin-top:8px;font-size:12px}
+.is-compact .tile-price{margin-top:10px;font-size:24px}
+.is-compact .tile-actions{gap:10px 16px;padding-top:14px}
+.is-compact .tile-actions .button{min-height:40px;padding:0 14px;font-size:12px;gap:8px}
+.is-compact .tile-actions .tile-details{font-size:12px}
+.tile-grid.is-compact>.add-card h3{font-size:24px}
+@media(max-width:580px){
+ .results-line>.results-note{display:none}
+ .view-toggle button{min-height:34px;padding:0 11px}
+ .plant-grid.tile-grid.is-compact{grid-template-columns:1fr 1fr;gap:32px 12px}
+ .is-compact .tile-body .card-heading{font-size:19px}
+ .is-compact .tile-body .scientific,.is-compact .tile-facts{font-size:11px}
+ .is-compact .tile-body .tile-code{display:none}
+ .is-compact .tile-price{font-size:20px}
+ .is-compact .tile-actions{flex-direction:column;align-items:stretch;gap:10px}
+ .is-compact .tile-actions .button{min-height:40px;justify-content:center;padding:0 10px}
+ .is-compact .tile-actions .tile-details{justify-content:center}
+}
+
+/* ---- Curation: category and species manager ---- */
+.category-filters>button.tag-manage{border:1px dashed var(--line);color:var(--gold)}
+.tag-manager{display:flex;flex-direction:column;gap:14px}
+.tag-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tag-list li{border:1px solid var(--line);border-radius:var(--radius);padding:8px}
+.tag-list li.is-removing{border-color:#c36f69}
+.tag-row{display:flex;align-items:center;gap:8px}
+.tag-row input{flex:1;min-width:0}
+.tag-count{font-size:12px;color:var(--muted);white-space:nowrap}
+.tag-remove{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;padding:10px 4px 2px;font-size:13px;color:var(--muted)}
+.tag-remove label{flex:1;min-width:200px}
+.tag-remove-actions{display:flex;align-items:center;gap:14px}
+.danger-button{color:#f5a69c;border-color:#c36f6966}
+.danger-button:hover{background:#7f252933}
+.tag-add{display:flex;gap:8px}
+.tag-add input{flex:1;min-width:0}
+@media(max-width:580px){.tag-count{display:none}.tag-add{flex-direction:column}}
+
+/* ---- Links from the home summaries to the cultivator page ---- */
+.section-more{margin-top:clamp(28px,4vw,44px);font-size:14px}
+
+/* ---- Cultivator page: personal collection and awards as feature sections ---- */
+.feature-heading{text-align:center;max-width:720px;margin:0 auto clamp(48px,7vw,104px)}
+.feature-heading h2{font-size:clamp(40px,5.4vw,76px);line-height:1.02;letter-spacing:-1px;margin:16px 0 20px}
+.feature-heading p{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--muted)}
+.personal.is-feature,.awards.is-feature{padding-top:calc(var(--section-y) * 1.2);padding-bottom:calc(var(--section-y) * 1.2)}
+.personal-feature{display:flex;flex-direction:column;gap:clamp(72px,10vw,150px)}
+.personal-feature>.personal-add{aspect-ratio:auto;min-height:180px;max-width:560px;width:100%;margin:0 auto}
+.personal-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(36px,7vw,112px);align-items:center}
+.personal-row:nth-of-type(even) .personal-row-media{order:2}
+.personal-row-media{position:relative}
+.personal-row .personal-photo{aspect-ratio:4/5;border-radius:var(--radius-lg);margin:0;box-shadow:0 50px 90px -50px #000e}
+.personal-row-text{display:flex;flex-direction:column;gap:14px;max-width:520px}
+.personal-index{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(56px,6vw,88px);line-height:.9;color:transparent;-webkit-text-stroke:1px var(--gold);font-feature-settings:"lnum" 1}
+.personal-row-text h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:var(--fs-feature);line-height:1.04;letter-spacing:-.5px;color:var(--text)}
+.personal-row-text .scientific{font-size:var(--fs-body)}
+.personal-row-text .personal-description{margin-top:6px}
+.personal-row-text .personal-thumbs{margin-top:10px;padding-top:0}
+.personal-thumbs .personal-more{display:grid;place-items:center;opacity:1;color:var(--gold);font-size:14px}
+.personal-tag{align-self:flex-start;margin-top:12px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.awards.is-feature{text-align:left}
+.awards-gallery{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(16px,2vw,28px)}
+.awards-gallery>*{grid-column:span 2}
+.awards-gallery>.award-shot:nth-of-type(5n+1){grid-column:span 4;grid-row:span 2}
+.awards-gallery>.awards-add{min-height:220px}
+.award-shot{position:relative;margin:0;border-radius:calc(var(--radius-lg) - 6px);overflow:hidden;background:var(--secondary);min-height:260px}
+.award-shot>.award-photo{position:absolute;inset:0;aspect-ratio:auto;width:100%;height:100%}
+.award-shot figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:4px;padding:56px 22px 20px;background:linear-gradient(transparent,#050a07e6);color:#e9ecdf;pointer-events:none}
+.award-shot figcaption strong{font-size:18px;font-weight:500;line-height:1.3}
+.award-shot figcaption .awards-place{color:#c7cdbb}
+.award-shot figcaption .awards-year{color:#f3e5ab}
+.award-shot:nth-of-type(5n+1) figcaption strong{font-size:clamp(20px,2vw,28px)}
+.awards-list{list-style:none;margin:clamp(40px,6vw,80px) auto 0;padding:0;max-width:900px;border-top:1px solid var(--line)}
+.awards-list li{position:relative;display:grid;grid-template-columns:120px 1fr auto;gap:24px;align-items:baseline;padding:24px 0;border-bottom:1px solid var(--line)}
+.awards-list li>div{display:flex;flex-direction:column;gap:4px}
+.awards-list strong{font-size:19px;font-weight:500;color:var(--text)}
+.awards-list .award-admin{position:static}
+@media(max-width:900px){
+ .personal-row{grid-template-columns:1fr;gap:28px}
+ .personal-row:nth-of-type(even) .personal-row-media{order:0}
+ .awards-gallery{grid-template-columns:1fr 1fr}
+ .awards-gallery>*,.awards-gallery>.award-shot:nth-of-type(5n+1){grid-column:span 1;grid-row:auto}
+ .awards-gallery>.award-shot:nth-of-type(3n+1){grid-column:span 2}
+ .award-shot{min-height:220px}
+ .awards-gallery>.award-shot:nth-of-type(3n+1){min-height:320px}
+}
+@media(max-width:580px){
+ .awards-gallery{grid-template-columns:1fr}
+ .awards-gallery>*,.awards-gallery>.award-shot:nth-of-type(3n+1){grid-column:auto}
+ .award-shot,.awards-gallery>.award-shot:nth-of-type(3n+1){min-height:300px}
+ .awards-list li{grid-template-columns:1fr auto;gap:6px 16px}
+ .awards-list li>.awards-year{grid-column:1/-1}
+}

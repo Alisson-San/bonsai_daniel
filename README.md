@@ -40,7 +40,8 @@ O `package-lock.json` registra as dependências instaladas. Mantenha-o no contro
 - Busca por nome/código/espécie, filtros por categoria/espécie/status, cards e galeria com botão de escala real.
 - Curadoria pelo cadeado no topo/rodapé: textos inline, cadastro, edição, duplicação, exclusão e alternância de status.
 - Upload de múltiplas fotos, drag-and-drop ou URL; seleção de capa e tags de ângulo; prévia no editor.
-- Criação de categorias e espécies nos filtros ou ao cadastrar um exemplar.
+- Categorias e espécies: na curadoria, "Gerenciar" (nos filtros de categoria) e "Gerenciar espécies" (em Filtros) criam, renomeiam e removem; renomear muda os exemplares que usam a categoria, e remover uma em uso pede para onde movê-los (espécie também pode ficar em branco). Também são criadas ao cadastrar um exemplar.
+- Visualização do catálogo: "Detalhada" (cards grandes) ou "Blocos" (grade enxuta, duas colunas no celular com foto, nome, preço e as duas ações). A escolha fica guardada no navegador.
 - IndexedDB, backup JSON validado e controle de revisão para impedir sobrescrita por uma aba desatualizada.
 - WhatsApp com mensagem contextual, preço e referência de foto; compartilhamento nativo com foto quando suportado, com alternativas de texto/download.
 
@@ -199,8 +200,10 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 
 ## Coleção pessoal e exposições
 
-- **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Aparece na página inicial depois da coleção à venda; tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
-- **Exposições e prêmios** (`src/components/Awards.tsx`): cada registro tem ano, título, evento ou local e uma foto opcional (certificado, troféu ou a árvore na exposição). Na curadoria, "Adicionar exposição ou prêmio" abre um formulário, e cada card tem botões de editar e excluir; a lista se ordena do ano mais recente ao mais antigo. A página inicial mostra os 6 mais recentes com "Ver todos"; a biografia mostra todos. Fica no catálogo em `awards`. Prêmios cadastrados antes como texto e as fotos da antiga galeria da biografia são convertidos em registros automaticamente.
+**Ordem da página inicial:** topo, coleção à venda (o destaque), como funciona, o cultivador, coleção pessoal (4 árvores), exposições e prêmios (3 mais recentes), vendidos, depoimentos e contato. A coleção pessoal e os prêmios aparecem resumidos, com link para a página do cultivador (`/biografia`), onde ficam completos e em destaque: cada árvore numa linha grande com fotos e texto, alternando os lados, e os prêmios com foto numa galeria, seguidos dos registros sem foto em lista por ano.
+
+- **Coleção pessoal** (`src/components/PersonalCollection.tsx`): árvores do cultivador que não estão à venda, num cadastro resumido (nome, espécie, idade, texto curto e até 12 fotos, a primeira é a capa). Tocar numa árvore abre as fotos e o texto. Na curadoria, "Adicionar bonsai da coleção" e os botões de editar e excluir em cada card. Fica no catálogo em `personal`.
+- **Exposições e prêmios** (`src/components/Awards.tsx`): cada registro tem ano, título, evento ou local e uma foto opcional (certificado, troféu ou a árvore na exposição). Na curadoria, "Adicionar exposição ou prêmio" abre um formulário, e cada card tem botões de editar e excluir; a lista se ordena do ano mais recente ao mais antigo. Fica no catálogo em `awards`. Prêmios cadastrados antes como texto e as fotos da antiga galeria da biografia são convertidos em registros automaticamente.
 - **Listas curtas** (destaques e trajetória da biografia, passos da compra, depoimentos): na curadoria, cada item tem campos com nome e botões para adicionar, remover e reordenar (`src/components/RowsEditor.tsx`).
 
 ## Fotos
