@@ -21,7 +21,8 @@ export function useTheme() {
     window.addEventListener('storage', sync);
     return () => { media.removeEventListener('change', apply); window.removeEventListener('storage', sync); };
   }, [preference]);
-  const choose = (value: Theme | null) => { setPreference(value); try { if (value) localStorage.setItem(key,value); else localStorage.removeItem(key); } catch {} };
+  // The page switches at once (before React re-renders), so a view transition can capture the new look.
+  const choose = (value: Theme | null) => { if (value) { document.documentElement.dataset.theme = value; document.documentElement.style.colorScheme = value; } setPreference(value); try { if (value) localStorage.setItem(key,value); else localStorage.removeItem(key); } catch {} };
   // Follows the system until the visitor picks a theme with the toggle; that choice is then remembered.
   return { theme, toggle: () => choose(theme === 'dark' ? 'light' : 'dark') };
 }

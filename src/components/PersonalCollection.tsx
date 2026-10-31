@@ -1,7 +1,8 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ImagePlus, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Crop, ImagePlus, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
+import PhotoAdjuster from './PhotoAdjuster';
 import { fileToImage } from '../lib/media';
 import { personalSchema, type PersonalTree } from '../lib/schema';
 import SectionMark from './SectionMark';
@@ -85,6 +86,7 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
   const [draft, setDraft] = useState(tree);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
+  const [adjusting, setAdjusting] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const set = <K extends keyof PersonalTree>(key: K, value: PersonalTree[K]) => setDraft(d => ({ ...d, [key]: value }));
   const add = async (files: FileList) => {
@@ -115,6 +117,7 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
         {draft.fotos.map((url, i) => <div key={url.slice(-24) + i} className={i === 0 ? 'is-cover' : ''}>
           <img src={url} alt={`Foto ${i + 1}`} />
           <span className="personal-editor-actions">
+            <button type="button" className="icon-button" title="Ajustar foto" aria-label={`Ajustar foto ${i + 1}`} onClick={() => setAdjusting(i)}><Crop size={14} /></button>
             {i > 0 && <button type="button" className="icon-button" title="Usar como capa" aria-label="Usar como capa" onClick={() => set('fotos', [url, ...draft.fotos.filter((_, k) => k !== i)])}><Star size={14} /></button>}
             <button type="button" className="icon-button danger" aria-label="Remover foto" onClick={() => set('fotos', draft.fotos.filter((_, k) => k !== i))}><X size={14} /></button>
           </span>
@@ -126,5 +129,6 @@ function PersonalEditor({ tree, saving, notify, onClose, onSave }: { tree: Perso
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="editor-actions"><button type="button" className="button button-outline" onClick={onClose} disabled={busy}>Cancelar</button><button className="button button-gold" disabled={busy}>{saving ? 'Salvando…' : 'Salvar árvore'}</button></div>
     </form>
+    {adjusting !== null && draft.fotos[adjusting] && <PhotoAdjuster src={draft.fotos[adjusting]} title={`Ajustar foto ${adjusting + 1}`} onClose={() => setAdjusting(null)} onApply={url => { set('fotos', draft.fotos.map((f, k) => k === adjusting ? url : f)); setAdjusting(null); }} />}
   </Modal>;
 }

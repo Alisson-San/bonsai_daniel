@@ -1,7 +1,8 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ArrowRight, Crop, ImagePlus, Pencil, Plus, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
+import PhotoAdjuster from './PhotoAdjuster';
 import { fileToImage } from '../lib/media';
 import { awardSchema, type Award } from '../lib/schema';
 import SectionMark from './SectionMark';
@@ -67,6 +68,7 @@ function AwardEditor({ award, saving, onClose, onSave }: { award: Award; saving:
   const [draft, setDraft] = useState(award);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
+  const [adjusting, setAdjusting] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const busy = saving || reading;
   const pick = async (file: File) => {
@@ -93,11 +95,12 @@ function AwardEditor({ award, saving, onClose, onSave }: { award: Award; saving:
       <div className="award-editor-photo">
         {draft.foto ? <div><img src={draft.foto} alt="Foto do registro" /><button type="button" className="icon-button danger" aria-label="Remover foto" onClick={() => setDraft(d => ({ ...d, foto: undefined }))}><X size={14} /></button></div>
           : <button type="button" onClick={() => input.current?.click()} disabled={busy}><ImagePlus size={20} /><span>{reading ? 'Preparando…' : 'Adicionar foto (opcional)'}</span><small>Certificado, troféu ou a árvore na exposição</small></button>}
-        {draft.foto && <button type="button" className="text-link" onClick={() => input.current?.click()} disabled={busy}>Trocar foto</button>}
+        {draft.foto && <span className="award-photo-links"><button type="button" className="text-link" onClick={() => setAdjusting(true)} disabled={busy}><Crop size={14} />Ajustar foto</button><button type="button" className="text-link" onClick={() => input.current?.click()} disabled={busy}>Trocar foto</button></span>}
       </div>
       <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e => { const file = e.target.files?.[0]; if (file) void pick(file); e.target.value = ''; }} />
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="editor-actions"><button type="button" className="button button-outline" onClick={onClose} disabled={busy}>Cancelar</button><button className="button button-gold" disabled={busy}>{saving ? 'Salvando…' : 'Salvar'}</button></div>
     </form>
+    {adjusting && draft.foto && <PhotoAdjuster src={draft.foto} onClose={() => setAdjusting(false)} onApply={foto => { setDraft(d => ({ ...d, foto })); setAdjusting(false); }} />}
   </Modal>;
 }

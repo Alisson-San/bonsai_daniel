@@ -209,7 +209,21 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Galho de navegação** (`BranchNav.tsx`, telas a partir de 1280 px): um galho fino na lateral cresce conforme a página rola; cada seção é uma folha de bordo, alternando os lados, que fica vermelha quando a seção é alcançada. Passar o mouse mostra o nome; clicar leva até a seção. Aparece depois do topo.
 - **Fotos reveladas por pincelada:** ao rolar, as fotos da coleção pessoal, dos prêmios, dos vendidos e do cultivador aparecem por uma pincelada (animação ligada à rolagem, nos navegadores que a suportam; nos outros, aparecem normalmente).
 - **Botões dourados e "Tenho interesse"** (`useButtonFlourish.ts`): no computador se inclinam alguns pixels em direção ao cursor; ao clicar, soltam algumas folhas de bordo.
-- **Tema:** começa no tema do sistema; o botão de sol/lua troca e a escolha fica guardada.
+- **Tema:** começa no tema do sistema; o botão de sol/lua troca (o novo tema se espalha em círculo a partir do botão, onde o navegador suporta View Transitions) e a escolha fica guardada.
+- **Header** (`HeaderNav.tsx`): no computador, um traço de pincel dourado fica sob o link da seção em que você está e desliza até o link sob o mouse; em todas as telas, uma linha dourada na borda inferior do header cresce com a rolagem. No celular, o botão de menu desenrola um pergaminho japonês (kakejiku) com os links numerados, a vareta dourada descendo por último e uma borla vermelha; tocar num link, fora do pergaminho ou em Esc fecha.
+- **Ícone do navegador** (`public/favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `icon-192/512.png`, `site.webmanifest`): a árvore e o vaso da logo oficial sobre o verde da logo, num aro dourado (o texto da logo não cabe em 16–32 px). Gerado por `python3 scripts/favicon.py public` (precisa do Pillow).
+
+## Ajuste de fotos
+
+Na curadoria, toda foto tem um botão **Ajustar** (ícone de recorte): galeria do exemplar, fotos da coleção pessoal, foto de exposição/prêmio ("Ajustar foto") e foto do cultivador. A ferramenta (`PhotoAdjuster.tsx`) permite:
+
+- **Proporção:** original, 1:1, 4:5, 3:4 ou 16:9;
+- **Enquadrar:** arrastar a foto para recentralizar, zoom pelo controle, pela roda do mouse ou com dois dedos, botão "Centralizar" (grade de terços aparece ao arrastar);
+- **Girar** 90° para cada lado, **endireitar** de −15° a +15° (a foto se amplia sozinha para não deixar cantos vazios) e **espelhar**;
+- **Brilho, contraste e saturação**;
+- "Restaurar" volta tudo ao original; dois cliques num controle o zeram.
+
+"Aplicar ajuste" grava uma nova imagem com o recorte e os ajustes (até 2000 px, sem ampliar além dos pixels da original; JPEG, ou WebP se tiver transparência), que sobe para o Storage ao salvar o cadastro, como uma foto nova. Fotos já no Storage abrem pelo CORS público do bucket.
 
 ## Coleção pessoal e exposições
 

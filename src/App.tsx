@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import { ArrowUpRight, Camera, Check, Download, LayoutGrid, Leaf, LockKeyhole, MapPin, Plus, Rows3, Search, Settings2, Tags, Upload, X, Instagram, LogOut, Sun, Moon } from 'lucide-react';
+import { ArrowUpRight, Camera, Check, Crop, Download, LayoutGrid, Leaf, LockKeyhole, MapPin, Plus, Rows3, Search, Settings2, Tags, Upload, X, Instagram, LogOut, Sun, Moon } from 'lucide-react';
 import { initialCatalog, newPlant } from './data/initial';
 import { buildWhatsappUrl, duplicatePlant, filterPlants, parseBackup, plantFromHash, serializeBackup, MAX_BACKUP_BYTES } from './lib/catalog';
 import { downloadFile, fileToImage } from './lib/media';
@@ -9,6 +9,7 @@ import { StaleCatalogError } from './lib/repository';
 import { createRemoteRepository, NotAdminError, PhotoUploadError } from './lib/remoteRepository';
 import { supabase } from './lib/supabase';
 import CurationAccess, { type AccessMode } from './components/CurationAccess';
+import PhotoAdjuster from './components/PhotoAdjuster';
 import { statuses, type Catalog, type Indicators, type Plant, type Settings } from './lib/schema';
 import Editable from './components/Editable';
 import PlantCard from './components/PlantCard';
@@ -31,6 +32,7 @@ import { useTheme } from './hooks/useTheme';
 import { useScrollReveal } from './hooks/useScrollReveal';
 import { useButtonFlourish } from './hooks/useButtonFlourish';
 import BranchNav from './components/BranchNav';
+import HeaderNav from './components/HeaderNav';
 import type { SavePlantField } from './components/PlantInline';
 import SectionMark from './components/SectionMark';
 
@@ -104,6 +106,7 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
   const [spatial, setSpatial] = useState<SpatialStatus>('loading');
   const [headerHidden, setHeaderHidden] = useState(false);
   const [instantDetail, setInstantDetail] = useState(false);
+  const [adjustingCultivator, setAdjustingCultivator] = useState(false);
   const cultivatorInput = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
   const latest = useRef(catalog);
@@ -174,6 +177,16 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
     setEditing(false);
     try { await (await supabase()).auth.signOut(); notify('Você saiu da curadoria.'); } catch { notify('Saiu da edição; não foi possível encerrar a sessão agora.'); }
   };
+  // The new theme spreads in a circle from the toggle (View Transitions, where supported).
+  const switchTheme = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { toggle(); return; }
+    const box = event.currentTarget.getBoundingClientRect(), x = box.left + box.width / 2, y = box.top + box.height / 2;
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const root = document.documentElement; root.classList.add('theme-switching');
+    const transition = document.startViewTransition(() => flushSync(toggle));
+    transition.ready.then(() => root.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] }, { duration: 750, easing: 'cubic-bezier(.65,0,.3,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+    transition.finished.finally(() => root.classList.remove('theme-switching'));
+  };
   const awardsSection = (limit?: number) => <Awards feature={!limit} awards={catalog.awards} editing={editing} saving={saving} limit={limit} onSave={award => commit(c => ({ ...c, awards: c.awards.some(item => item.id === award.id) ? c.awards.map(item => item.id === award.id ? award : item) : [award, ...c.awards] }), 'Registro salvo.')} onDelete={award => { if (confirm(`Excluir "${award.titulo}"?`)) void commit(c => ({ ...c, awards: c.awards.filter(item => item.id !== award.id) }), 'Registro excluído.'); }} />;
   const personalSection = (limit?: number) => <PersonalCollection feature={!limit} limit={limit} trees={catalog.personal} editing={editing} saving={saving} notify={notify} onSave={tree => commit(c => ({ ...c, personal: c.personal.some(t => t.id === tree.id) ? c.personal.map(t => t.id === tree.id ? tree : t) : [tree, ...c.personal] }), 'Árvore da coleção pessoal salva.')} onDelete={tree => { if (confirm(`Excluir ${tree.nome} da coleção pessoal?`)) void commit(c => ({ ...c, personal: c.personal.filter(t => t.id !== tree.id) }), 'Árvore removida da coleção pessoal.'); }} />;
   const saveSetting = (key: TextSetting, value: string) => commit(c => ({ ...c, settings: { ...c.settings, [key]: value } }));
@@ -215,7 +228,7 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
   const inline = (key: TextSetting, label: string, multiline = false) => <Editable value={s[key]} editing={editing} onSave={value => saveSetting(key, value)} label={label} multiline={multiline} />;
   return <LayoutGroup><div className={`site ${editing ? 'is-editing' : ''} ${page === 'home' ? 'is-home' : ''}`}>
     <a className="skip-link" href="#colecao">Ir para a coleção</a>
-    <header className={`site-header ${headerHidden ? 'is-hidden' : ''}`}><a href={page === 'home' ? '#inicio' : '/'} data-route={page === 'home' ? undefined : true} className="wordmark" aria-label="Bonsai Daniel Bourscheid, início"><Brand /></a><nav aria-label="Navegação principal">{page === 'home' ? <a href="#colecao">A coleção</a> : <a href="/#colecao" data-route>A coleção</a>}<a href="/biografia" data-route aria-current={page === 'bio' ? 'page' : undefined}>Biografia</a>{page === 'home' ? <a href="#contato">Contato <ArrowUpRight size={13} /></a> : <a href="/#contato" data-route>Contato <ArrowUpRight size={13} /></a>}</nav><div className="header-actions"><button className="theme-toggle icon-button" onClick={toggle} aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}>{theme === 'dark' ? <Sun size={20}/> : <Moon size={20}/>}</button><button className={`curation-toggle ${editing ? 'active' : ''}`} aria-label={editing ? 'Sair da curadoria' : 'Abrir curadoria local'} onClick={() => { if (editing) void signOut(); else if (ready && !storageError) setAccess('entrar'); }} disabled={!ready}><LockKeyhole size={16} /><span>{editing ? 'Em edição' : 'Curadoria'}</span></button></div></header>
+    <header className={`site-header ${headerHidden ? 'is-hidden' : ''}`}><a href={page === 'home' ? '#inicio' : '/'} data-route={page === 'home' ? undefined : true} className="wordmark" aria-label="Bonsai Daniel Bourscheid, início"><Brand /></a><HeaderNav page={page} /><div className="header-actions"><button className="theme-toggle icon-button" onClick={switchTheme} aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'} title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}><span key={theme} className="theme-icon">{theme === 'dark' ? <Sun size={20}/> : <Moon size={20}/>}</span></button><button className={`curation-toggle ${editing ? 'active' : ''}`} aria-label={editing ? 'Sair da curadoria' : 'Abrir curadoria local'} onClick={() => { if (editing) void signOut(); else if (ready && !storageError) setAccess('entrar'); }} disabled={!ready}><LockKeyhole size={16} /><span>{editing ? 'Em edição' : 'Curadoria'}</span></button></div></header>
     {page === 'home' ? <main><BranchNav /><section className={`hero hero-spatial is-${spatial} section-shell`} id="inicio">{spatial !== 'failed' && <BonsaiHero3D theme={theme} onStatus={setSpatial} />}<div className="hero-stage">{spatial === 'failed' && <><AcerCanvas /><div className="hero-fallback-brand"><Brand hero /></div></>}</div>
       <div className="hero-copy"><div className="eyebrow hero-eyebrow"><span />{inline('heroEyebrow', 'chamada do hero')}</div><h1>{inline('heroTitle', 'título do hero', true)}</h1><p className="hero-description">{inline('heroDescription', 'descrição do hero', true)}</p><a className="button button-gold" href="#colecao">Ver a coleção <ArrowUpRight size={18} /></a><HeroBenefits /></div>
 
@@ -230,7 +243,7 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
       {ready && !listed.length && <div className="empty-state"><Leaf size={32} /><h3>Nenhum exemplar por aqui.</h3><p>Tente outra busca ou escolha uma categoria diferente.</p><button className="button button-outline" onClick={() => { setQuery(''); setCategory(''); setSpecies(''); setStatus(''); }}>Ver toda a coleção</button></div>}
     </section>
     <PurchaseSteps text={s.purchaseSteps} editing={editing} saving={saving} onSave={value => saveSetting('purchaseSteps', value)} />
-    <section className="cultivator section-shell" id="cultivador"><div className="cultivator-image"><img src={s.fotoCultivador ?? '/images/bonsai_01.jpeg'} alt="Daniel Bourscheid e seu trabalho de cultivo" loading="lazy" />{editing && <div className="cultivator-edit"><button className="button button-outline" onClick={() => cultivatorInput.current?.click()} disabled={saving}><Camera size={16} />Trocar foto do cultivador</button>{s.fotoCultivador && <button className="text-link" onClick={() => void commit(c => { const { fotoCultivador: _removed, ...settings } = c.settings; return { ...c, settings }; }, 'Foto do cultivador restaurada.')}>Restaurar padrão</button>}<input ref={cultivatorInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (file) void replaceCultivatorPhoto(file); e.target.value = ''; }} /></div>}</div><div className="cultivator-copy"><SectionMark label="O CULTIVADOR" /><h2>{inline('bioTitle', 'título da bio', true)}</h2>{(s.bio || editing) && <p>{inline('bio', 'bio do cultivador', true)}</p>}<div className="signature">Daniel Bourscheid</div><a className="button button-outline" href="/biografia" data-route>Conheça a história <ArrowUpRight size={18} /></a></div></section>
+    <section className="cultivator section-shell" id="cultivador"><div className="cultivator-image"><img src={s.fotoCultivador ?? '/images/bonsai_01.jpeg'} alt="Daniel Bourscheid e seu trabalho de cultivo" loading="lazy" />{editing && <div className="cultivator-edit"><button className="button button-outline" onClick={() => cultivatorInput.current?.click()} disabled={saving}><Camera size={16} />Trocar foto do cultivador</button><button className="button button-outline" onClick={() => setAdjustingCultivator(true)} disabled={saving}><Crop size={16} />Ajustar foto</button>{s.fotoCultivador && <button className="text-link" onClick={() => void commit(c => { const { fotoCultivador: _removed, ...settings } = c.settings; return { ...c, settings }; }, 'Foto do cultivador restaurada.')}>Restaurar padrão</button>}<input ref={cultivatorInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (file) void replaceCultivatorPhoto(file); e.target.value = ''; }} /></div>}</div><div className="cultivator-copy"><SectionMark label="O CULTIVADOR" /><h2>{inline('bioTitle', 'título da bio', true)}</h2>{(s.bio || editing) && <p>{inline('bio', 'bio do cultivador', true)}</p>}<div className="signature">Daniel Bourscheid</div><a className="button button-outline" href="/biografia" data-route>Conheça a história <ArrowUpRight size={18} /></a></div></section>
     {personalSection(4)}
     {awardsSection(3)}
     {!editing && <SoldShowcase plants={sold} onOpen={plant => openPlant(plant, null)} />}
@@ -241,6 +254,7 @@ export default function App({ path: initialPath = '/', catalog: preloaded }: { p
     <AnimatePresence>{editing && <motion.aside className="admin-dock" aria-label="Barra de curadoria" initial={{ y: 90 }} animate={{ y: 0 }} exit={{ y: 90 }}><div className="dock-status"><span className="editing-dot" /><strong>Modo Edição Ativo</strong><small>{saving ? 'Salvando…' : 'Publicado ao salvar'}</small></div><div className="dock-actions"><button aria-label="Novo Bonsai" onClick={() => setEditor(newPlant())} disabled={saving}><Plus size={18}/><span>Novo Bonsai</span></button><button title="Configurações de contato" aria-label="Configurações de contato" onClick={() => setSettingsOpen(true)} disabled={saving}><Settings2 size={18} /><span>WhatsApp/Contatos</span></button><button aria-label="Exportar Backup JSON" onClick={exportCatalog} disabled={saving}><Download size={18} /><span>Exportar Backup JSON</span></button><button aria-label="Importar JSON" onClick={() => importInput.current?.click()} disabled={saving}><Upload size={18} /><span>Importar JSON</span></button><button onClick={() => void signOut()} aria-label="Sair da curadoria e encerrar a sessão"><LogOut size={18} /><span>Sair</span></button></div></motion.aside>}</AnimatePresence>
     <input ref={importInput} type="file" accept="application/json,.json" hidden onChange={e => { const file = e.target.files?.[0]; if (file) void importCatalog(file); e.target.value = ''; }} />
     <AnimatePresence>{detailPlant && <PlantDetail key={detailPlant.id} plant={detailPlant} editing={editing} instant={instantDetail} onSaveField={saveField} onSaveIndicator={(key, value) => void saveIndicator(detailPlant.id, key, value)} onEditGallery={() => { setEditor(detailPlant);setSelected(null); }} onClose={closeDetail} onInterest={() => interest(detailPlant)} notify={notify} />}{editor && <PlantEditor key={editor.id} plant={editor} catalog={catalog} onClose={() => setEditor(null)} onSave={savePlant} />}{tagManager && <TagManager key={tagManager} kind={tagManager} catalog={catalog} saving={saving} onClose={() => setTagManager(null)} onSave={saveTags} />}{settingsOpen && <SettingsEditor settings={s} onClose={() => setSettingsOpen(false)} onSave={settings => commit(c => ({ ...c, settings }))} />}{access && <CurationAccess mode={access} onClose={() => setAccess(null)} onEnter={() => { setAccess(null); if (ready && !storageError) setEditing(true); }} notify={notify} />}</AnimatePresence>
+    {adjustingCultivator && <PhotoAdjuster src={s.fotoCultivador ?? '/images/bonsai_01.jpeg'} title="Ajustar foto do cultivador" onClose={() => setAdjustingCultivator(false)} onApply={image => { setAdjustingCultivator(false); void commit(c => ({ ...c, settings: { ...c.settings, fotoCultivador: image } }), 'Foto do cultivador ajustada.'); }} />}
     <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Check size={17} /><span>{toast}</span><button className="icon-button" aria-label="Fechar aviso" onClick={() => setToast('')}><X size={16} /></button></motion.div>}</AnimatePresence>
   </div></LayoutGroup>;
 }

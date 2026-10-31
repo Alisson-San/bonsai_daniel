@@ -594,3 +594,78 @@
  }
 }
 @keyframes ink-reveal{from{-webkit-mask-position:100% 0;mask-position:100% 0}to{-webkit-mask-position:0 0;mask-position:0 0}}
+
+/* ==== Header (HeaderNav): brush stroke under the current link, progress line, hanging-scroll menu on phones ==== */
+.header-nav{position:relative;display:flex;align-items:center;gap:clamp(24px,3vw,44px);padding:10px 0}
+.header-nav a{position:relative;z-index:1;padding:6px 0;color:var(--muted);transition:color .3s}
+.header-nav a:hover,.header-nav a:focus-visible,.header-nav a[aria-current="page"]{color:var(--text)}
+.header-ink{position:absolute;left:0;bottom:4px;height:6px;width:0;opacity:0;background:var(--gold);pointer-events:none;transition:translate .55s cubic-bezier(.3,1.3,.5,1),width .45s cubic-bezier(.3,1.2,.5,1),opacity .3s;
+ -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.6C20 1.4 60 1.8 99 2.6 70 4.6 30 5.4 1 4.6Z'/%3E%3C/svg%3E") 0 0/100% 100%;
+ mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.6C20 1.4 60 1.8 99 2.6 70 4.6 30 5.4 1 4.6Z'/%3E%3C/svg%3E") 0 0/100% 100%}
+.header-progress{position:absolute;left:0;right:0;bottom:-1px;height:2px;pointer-events:none;overflow:hidden}
+.header-progress>span{display:block;height:100%;background:linear-gradient(90deg,transparent,var(--gold) 12%,var(--gold-bright));transform-origin:0 50%;scale:0 1}
+.theme-icon{display:grid;place-items:center;animation:theme-icon .6s cubic-bezier(.3,1.5,.5,1)}
+@keyframes theme-icon{from{rotate:-120deg;scale:.3;opacity:0}to{rotate:0deg;scale:1;opacity:1}}
+.theme-switching::view-transition-old(root),.theme-switching::view-transition-new(root){animation:none;mix-blend-mode:normal}
+.menu-toggle{display:none}
+@media(max-width:580px){
+ .site-header{grid-template-columns:1fr auto auto;column-gap:6px}
+ .site-header>.header-nav{display:none}
+ .menu-toggle{order:3;display:grid;align-content:center;gap:6px;width:42px;height:42px;padding:0 9px;border:0;background:none;color:var(--text)}
+ .menu-toggle>span{display:block;height:2px;background:currentColor;border-radius:2px;transition:rotate .45s cubic-bezier(.5,0,.2,1),translate .45s cubic-bezier(.5,0,.2,1),width .3s}
+ .menu-toggle>span:last-child{width:68%;justify-self:end}
+ .menu-toggle.is-open>span:first-child{translate:0 4px;rotate:45deg}
+ .menu-toggle.is-open>span:last-child{width:100%;translate:0 -4px;rotate:-45deg}
+}
+/* The header's backdrop filter makes it the containing block, so the menu is placed against the header. */
+.scroll-menu-shade{position:absolute;left:0;right:0;top:100%;height:100dvh;background:rgba(5,10,7,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.scroll-menu{position:absolute;top:calc(100% + 6px);left:16px;right:16px;z-index:2}
+.scroll-menu-paper{padding:30px 26px 34px;background:radial-gradient(ellipse at 30% 0%,rgba(212,175,55,.08),transparent 60%),repeating-linear-gradient(180deg,transparent 0 22px,rgba(212,175,55,.035) 22px 23px),var(--surface);border-left:1px solid var(--glass-line);border-right:1px solid var(--glass-line);box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.site-header .scroll-menu nav{display:flex;flex-direction:column;gap:4px;font-size:inherit}
+.scroll-menu a{display:flex;align-items:baseline;gap:14px;padding:9px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;line-height:1.1;color:var(--text);border-bottom:1px solid var(--line)}
+.scroll-menu a:last-child{border-bottom:0}
+.scroll-menu a small{font-family:Inter,sans-serif;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-feature-settings:"tnum" 1}
+.scroll-menu a[aria-current="page"]{color:var(--gold-bright)}
+.scroll-menu-rod{position:absolute;left:-10px;right:-10px;height:12px;margin-top:-6px;border-radius:6px;background:linear-gradient(180deg,#F3E5AB,#D4AF37 45%,#8a6a1c);box-shadow:0 6px 14px rgba(0,0,0,.45)}
+.scroll-menu-rod::before,.scroll-menu-rod::after{content:"";position:absolute;top:-2px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F3E5AB,#9b7720)}
+.scroll-menu-rod::before{left:-6px}.scroll-menu-rod::after{right:-6px}
+.scroll-menu-rod>i{position:absolute;left:50%;top:12px;width:1px;height:26px;background:#D9232E}
+.scroll-menu-rod>i::after{content:"";position:absolute;left:-4px;bottom:-8px;width:9px;height:12px;border-radius:50% 50% 45% 45%;background:#D9232E}
+
+/* ---- Photo adjustment (PhotoAdjuster): framing, turns, straightening and tone, baked into a new image ---- */
+.adjust-backdrop{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--overlay,#020a07d9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.adjust-panel{display:flex;flex-direction:column;width:min(1080px,100%);max-height:calc(100dvh - 48px);background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:0 40px 100px rgba(0,0,0,.5);overflow:hidden}
+.adjust-head{display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--line)}
+.adjust-head h2{font-size:28px;line-height:1;margin-right:auto}
+.adjust-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:0;flex:1}
+.adjust-stage{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px;padding:24px;background:repeating-conic-gradient(rgba(127,127,127,.08) 0 25%,transparent 0 50%) 0 0/22px 22px,#050a07}
+.adjust-frame{position:relative;overflow:hidden;cursor:grab;touch-action:none;box-shadow:0 0 0 1px rgba(243,229,171,.6),0 0 0 9999px rgba(5,10,7,.55);border-radius:4px}
+.adjust-frame.is-dragging{cursor:grabbing}
+.adjust-frame>img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:50% 50%;user-select:none;pointer-events:none}
+.adjust-grid{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.5) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgba(255,255,255,.5) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px)),linear-gradient(180deg,transparent calc(33.33% - .5px),rgba(255,255,255,.5) calc(33.33% - .5px) calc(33.33% + .5px),transparent calc(33.33% + .5px) calc(66.66% - .5px),rgba(255,255,255,.5) calc(66.66% - .5px) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.adjust-frame.is-dragging .adjust-grid,.adjust-frame:hover .adjust-grid{opacity:1}
+.adjust-controls{display:flex;flex-direction:column;gap:18px;padding:22px 24px;overflow-y:auto;border-left:1px solid var(--line)}
+.adjust-group{display:flex;flex-direction:column;gap:10px}
+.adjust-label,.adjust-slider>span{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.4px;color:var(--muted)}
+.adjust-slider{display:flex;flex-direction:column;gap:8px}
+.adjust-slider output{color:var(--text);font-feature-settings:"tnum" 1}
+.adjust-slider input{width:100%;accent-color:var(--gold);padding:0;height:24px;background:none;border:0}
+.adjust-chips,.adjust-tools{display:flex;flex-wrap:wrap;gap:6px}
+.adjust-chips button,.adjust-tools button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--text);font-size:12px}
+.adjust-chips button.selected,.adjust-tools button.selected{background:var(--gold);border-color:var(--gold);color:#13140d}
+.adjust-chips button:hover,.adjust-tools button:hover{border-color:var(--gold)}
+.adjust-help{font-size:12px;line-height:1.6;color:var(--muted)}
+.adjust-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--line)}
+.adjust-actions>span{display:flex;gap:10px}
+.award-photo-links{display:flex;gap:18px}
+.cultivator-edit{flex-wrap:wrap}
+@media(max-width:800px){
+ .adjust-backdrop{padding:0}
+ .adjust-panel{max-height:100dvh;height:100dvh;border-radius:0;border:0}
+ .adjust-body{grid-template-columns:1fr;grid-template-rows:minmax(260px,46dvh) minmax(0,1fr)}
+ .adjust-stage{min-height:0;padding:14px}
+ .adjust-controls{border-left:0;border-top:1px solid var(--line);padding:16px 18px;gap:14px}
+ .adjust-head{padding:12px 16px}.adjust-head h2{font-size:22px}
+ .adjust-actions{padding:10px 16px}
+ .adjust-actions .button{padding:0 16px}
+}
