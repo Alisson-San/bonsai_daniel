@@ -198,13 +198,18 @@ O catálogo fica no projeto Supabase `bonsai-daniel` (plano gratuito, região S�
 - **Depoimentos:** ocultos até o primeiro ser cadastrado na curadoria (depoimento, nome e cidade).
 - **Logo no topo:** na página inicial, o logo do menu fica oculto enquanto o emblema 3D está na tela; ao rolar, o emblema sobe com a página encolhendo e esmaecendo (sem passar por trás do título) e o logo do menu aparece no lugar. O menu só se esconde ao rolar para baixo depois do topo.
 
-## Identidade visual: selos, plaquinhas, pincel e ensō
+## Identidade visual e interações
 
-- **Selo hanko** (`src/components/SectionMark.tsx`): cada seção abre com o carimbo vermelho com que mestres japoneses assinam suas obras, com o kanji da seção (盆栽 coleção, 道 como funciona, 匠 cultivador, 蔵 coleção pessoal, 誉 prêmios, 家 vendidos, 声 depoimentos, 縁 contato; na biografia 伝記, 語, 歩). O selo é "carimbado" ao entrar na tela (desce, pressiona e assenta torto) e tem textura de tinta gasta. A fonte (Shippori Mincho) baixa só esses caracteres: um kanji novo precisa entrar também no link em `index.html`.
-- **Categorias como plaquinhas penduradas** (`src/components/CategoryRope.tsx`): etiquetas de madeira presas numa corda, como num viveiro japonês. Balançam de leve com a brisa, balançam ao passar o mouse ou tocar, e a escolhida desce um pouco e fica dourada, com uma conta vermelha. No celular a corda rola para o lado. A corda substitui a linha divisória acima dos filtros.
+- **Brincar com a árvore 3D** (`BonsaiHero3D.tsx`, `touch`/`shake` em `bonsaiScene.ts`): passar o mouse ou o dedo pela copa afasta as folhas perto do ponto, que tremem, e solta algumas folhas pelo caminho; clicar ou tocar na copa dá um chacoalhão na árvore inteira (uma mola inclina e balança a árvore, a copa sacode) e cai uma chuva de folhas. No celular, deslizar o dedo para os lados mexe na copa e deslizar para cima ou para baixo continua rolando a página. Uma dica ("toque na árvore" / "passe o mouse pela copa") aparece uma vez por visita e some na primeira interação. Folhas extras caem uma vez só e somem, com limite de 48 ao mesmo tempo.
+- **Folhas que caem:** só dentro do topo. Poucas folhas (8 no computador, 5 no celular, 3 com movimento reduzido) se soltam da copa e descem planando de um lado para o outro, inclinando no balanço; somem antes do fim do topo e o desenho pausa quando o topo sai da tela.
+- **Títulos de seção:** traço de pincel dourado e rótulo (`SectionMark.tsx`).
+- **Categorias como plaquinhas penduradas** (`CategoryRope.tsx`): etiquetas de madeira presas numa corda, como num viveiro japonês. Balançam de leve com a brisa, balançam ao passar o mouse ou tocar, e a escolhida desce um pouco e fica dourada, com uma conta vermelha. No celular a corda rola para o lado.
 - **Busca como traço de pincel:** sem caixa; um traço dourado que se completa ao tocar no campo. "Refinar" abre os filtros de espécie e disponibilidade (o + gira e vira ×).
 - **Ensō na visualização:** "Detalhada" e "Blocos" são marcados por um círculo zen pintado a pincel, que se desenha ao escolher.
-- **Folhas que caem:** só dentro do topo. Poucas folhas (8 no computador, 5 no celular, 3 com movimento reduzido) se soltam da copa e descem planando de um lado para o outro, inclinando no balanço; somem antes do fim do topo e o desenho pausa quando o topo sai da tela.
+- **Galho de navegação** (`BranchNav.tsx`, telas a partir de 1280 px): um galho fino na lateral cresce conforme a página rola; cada seção é uma folha de bordo, alternando os lados, que fica vermelha quando a seção é alcançada. Passar o mouse mostra o nome; clicar leva até a seção. Aparece depois do topo.
+- **Fotos reveladas por pincelada:** ao rolar, as fotos da coleção pessoal, dos prêmios, dos vendidos e do cultivador aparecem por uma pincelada (animação ligada à rolagem, nos navegadores que a suportam; nos outros, aparecem normalmente).
+- **Botões dourados e "Tenho interesse"** (`useButtonFlourish.ts`): no computador se inclinam alguns pixels em direção ao cursor; ao clicar, soltam algumas folhas de bordo.
+- **Tema:** começa no tema do sistema; o botão de sol/lua troca e a escolha fica guardada.
 
 ## Coleção pessoal e exposições
 

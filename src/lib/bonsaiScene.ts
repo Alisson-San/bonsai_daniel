@@ -12,7 +12,9 @@ export function loadThree() {
   return loading;
 }
 
-export type BonsaiScene = { setTheme: (theme: Theme) => void; dispose: () => void };
+// touch: the pointer is over the crown at these client coordinates (leaves near it are pushed aside and rustle).
+// shake: a tap or click on the crown; the whole tree sways and the crown shivers.
+export type BonsaiScene = { setTheme: (theme: Theme) => void; touch: (clientX: number, clientY: number) => void; shake: () => void; dispose: () => void };
 export type PageRect = { x: number; y: number; width: number; height: number };
 // entrance: false starts on the finished composition (it replaces a still of it on phones).
 // onError reports a failure after the scene was created (first frame), so the hero can fall back instead of waiting.
@@ -756,12 +758,25 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   // Fewer, larger leaves of varied sizes, so single leaves read clearly as in the logo.
   const perOuter = 10, perInner = compact ? 5 : 6;
   const count = clusters.reduce((sum, cluster) => sum + (cluster.inner ? perInner : perOuter), 0);
-  const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 }, uBreeze: { value: gentle ? .4 : 1 } };
+  const motion = { uTime: { value: 0 }, uReveal: { value: settled ? 2 : 0 }, uBreeze: { value: gentle ? .4 : 1 }, uTouch: { value: new THREE.Vector3(0, -99, 0) }, uTouchAmt: { value: 0 }, uShake: { value: 0 } };
   const delays = new Float32Array(count);
   const patch = (shader: { uniforms: Record<string, { value: unknown }>; vertexShader: string }) => {
     shader.uniforms.uTime = motion.uTime; shader.uniforms.uReveal = motion.uReveal; shader.uniforms.uBreeze = motion.uBreeze;
+    shader.uniforms.uTouch = motion.uTouch; shader.uniforms.uTouchAmt = motion.uTouchAmt; shader.uniforms.uShake = motion.uShake;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uReveal;\nuniform float uBreeze;\nattribute float aDelay;')
+      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uReveal;\nuniform float uBreeze;\nuniform vec3 uTouch;\nuniform float uTouchAmt;\nuniform float uShake;\nattribute float aDelay;')
+      // Pointer and shake move whole leaves in the crown's own space (after the instance matrix): leaves near the
+      // pointer are pushed away from it and toward the viewer, shivering; a shake swings the crown, more at the top.
+      .replace('#include <project_vertex>', THREE.ShaderChunk.project_vertex.replace('mvPosition = instanceMatrix * mvPosition;', `mvPosition = instanceMatrix * mvPosition;
+  vec3 leafAt = instanceMatrix[3].xyz;
+  vec2 away = leafAt.xy - uTouch.xy;
+  float reach = uTouchAmt * exp(-dot(away, away) / .5);
+  vec2 dir = away / max(length(away), .001);
+  mvPosition.xyz += vec3(dir * .2, .14) * reach;
+  mvPosition.xyz += vec3(sin(uTime * 23. + leafAt.x * 9.), cos(uTime * 19. + leafAt.y * 7.), 0.) * .03 * (reach + uShake * .8);
+  float height = clamp(leafAt.y - .9, 0., 2.);
+  mvPosition.x += uShake * sin(uTime * 14. + leafAt.y * .8) * .09 * height;
+  mvPosition.z += uShake * cos(uTime * 11. + leafAt.x) * .05 * height;`))
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 #ifdef USE_INSTANCING
   vec3 anchor = instanceMatrix[3].xyz;
@@ -926,6 +941,11 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   const composition = COMPOSITION;
   const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
   let turn = 0, scrollTurn = 0;
+  // Touch: how strongly the crown reacts to the pointer (eases to the target, which fades once the pointer stops).
+  // Shake: a damped spring on the tree's lean, kicked by a tap.
+  let touchAmt = 0, touchTarget = 0, lean = 0, leanVelocity = 0;
+  const touchScale = gentle ? .5 : 1;
+  const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(), crownPlane = new THREE.Plane(), crownWorld = new V(), touchPoint = new V();
   // The entrance runs on wall-clock time, so slow devices still finish it in 1.5 s.
   let frameAverage = 1 / 60, frameCount = 0;
   let frame = 0, visible = true, first = true, elapsed = 0, previous = 0, entrance = settled ? 99 : 0, entranceStart = 0;
@@ -987,6 +1007,10 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
     turn += (scrollTurn - turn) * Math.min(1, dt * 4);
     tree.rotation.y = turn * THREE.MathUtils.degToRad(24);
     world.rotation.y = pointer.x * THREE.MathUtils.degToRad(8); world.rotation.x = -pointer.y * THREE.MathUtils.degToRad(2.5);
+    touchAmt += (touchTarget - touchAmt) * Math.min(1, dt * 7); touchTarget *= Math.exp(-dt * 2.2);
+    leanVelocity += (-55 * lean - 2.2 * leanVelocity) * dt; lean += leanVelocity * dt;
+    motion.uTouchAmt.value = touchAmt * touchScale; motion.uShake.value = Math.min(1, Math.abs(leanVelocity) * 2.2);
+    tree.rotation.z = lean;
     renderer.render(scene, camera);
     if (first) { first = false; onFirstFrame(); }
   };
@@ -1031,6 +1055,21 @@ export async function createBonsaiScene(THREE: Three, canvas: HTMLCanvasElement,
   });
 
   return {
+    touch(clientX, clientY) {
+      const box = canvas.getBoundingClientRect();
+      ndc.set((clientX - box.left) / box.width * 2 - 1, -((clientY - box.top) / box.height * 2 - 1));
+      raycaster.setFromCamera(ndc, camera);
+      foliage.updateWorldMatrix(true, false);
+      foliage.localToWorld(crownWorld.copy(crown));
+      crownPlane.setFromNormalAndCoplanarPoint(new V(0, 0, 1), crownWorld);
+      if (!raycaster.ray.intersectPlane(crownPlane, touchPoint)) return;
+      motion.uTouch.value.copy(foliage.worldToLocal(touchPoint));
+      touchTarget = 1;
+    },
+    shake() {
+      leanVelocity += (lean > 0 ? -1 : 1) * .55 * touchScale;
+      touchTarget = Math.max(touchTarget, .6);
+    },
     setTheme(next) {
       const palette = palettes[next];
       fog.color.set(palette.fog); fog.density = palette.density;

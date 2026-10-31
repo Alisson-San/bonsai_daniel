@@ -40,7 +40,7 @@ export default function Awards({ awards, editing, saving, limit, feature = false
   const withPhoto = shown.filter(a => a.foto), withoutPhoto = shown.filter(a => !a.foto);
   return <section className={`awards section-shell ${feature ? 'is-feature' : ''}`} id="premios">
     <div className={feature ? 'feature-heading' : ''}>
-      <SectionMark kanji="誉" label="EXPOSIÇÕES E PRÊMIOS" />
+      <SectionMark label="EXPOSIÇÕES E PRÊMIOS" />
       <h2>Reconhecimento<br />em cada estação.</h2>
       {feature && all.length > 0 && <p>{all.length} registro{all.length === 1 ? '' : 's'} de exposições, prêmios e encontros{years.length ? `, desde ${Math.min(...years)}` : ''}.</p>}
     </div>

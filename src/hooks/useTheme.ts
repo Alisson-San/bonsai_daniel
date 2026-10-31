@@ -22,5 +22,6 @@ export function useTheme() {
     return () => { media.removeEventListener('change', apply); window.removeEventListener('storage', sync); };
   }, [preference]);
   const choose = (value: Theme | null) => { setPreference(value); try { if (value) localStorage.setItem(key,value); else localStorage.removeItem(key); } catch {} };
-  return { theme, toggle: () => choose(theme === 'dark' ? 'light' : 'dark'), reset: () => choose(null), automatic: preference !== 'dark' && preference !== 'light' };
+  // Follows the system until the visitor picks a theme with the toggle; that choice is then remembered.
+  return { theme, toggle: () => choose(theme === 'dark' ? 'light' : 'dark') };
 }

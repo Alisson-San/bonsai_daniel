@@ -23,17 +23,20 @@ function sprite(color: string, blur: number) {
  return canvas;
 }
 
+// Commands from the hero: release leaves where the pointer brushes the crown, or a shower over the whole crown.
+export type LeafControl = { release: (pageX: number, pageY: number, count: number) => void; shower: () => void };
+
 // A few maple leaves let go of the 3D crown and drift down through the hero only: the canvas fills the hero section,
 // leaves fade out before its bottom edge and nothing is drawn while the hero is off screen. Each leaf glides like a
 // real one, swinging side to side, tilting into the swing and slowing at each end of it.
-export default function FallingLeaves({ source }: { source: { current: PageRect | null } }) {
+export default function FallingLeaves({ source, control }: { source: { current: PageRect | null }; control?: { current: LeafControl | null } }) {
  const ref = useRef<HTMLCanvasElement>(null);
  useEffect(() => {
   const canvas = ref.current, context = canvas?.getContext('2d'), hero = canvas?.parentElement;
   if (!canvas || !context || !hero) return;
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const sprites = layers.map(layer => colors.map(color => sprite(color, layer.blur)));
-  type Leaf = { x: number; y: number; age: number; size: number; layer: number; sprite: HTMLCanvasElement; phase: number; swing: number; amp: number; drift: number; spin: number; rotation: number; flip: number; wait: number };
+  type Leaf = { x: number; y: number; age: number; size: number; layer: number; sprite: HTMLCanvasElement; phase: number; swing: number; amp: number; drift: number; spin: number; rotation: number; flip: number; wait: number; vx: number; vy: number; extra?: boolean };
   const leaves: Leaf[] = [];
   let width = 0, height = 0;
   // Hero-local coordinates: the crown rectangle comes in page coordinates.
@@ -43,12 +46,31 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
    // Mostly from the right side of the crown, as in the logo.
    const x = crown ? crown.x - left + crown.width * (Math.random() < .7 ? .5 + Math.random() * .45 : .1 + Math.random() * .4) : width * (.45 + Math.random() * .5);
    const y = crown ? crown.y - top + crown.height * (.3 + Math.random() * .4) : height * .1;
-   return Object.assign(leaf, { x, y, age: 0, size: min + Math.random() * (max - min), sprite: sprites[layer][Math.floor(Math.random() * colors.length)], phase: Math.random() * 6.28, swing: .7 + Math.random() * .5, amp: 22 + Math.random() * 26, drift: 4 + Math.random() * 8, spin: (Math.random() - .5) * .5, rotation: Math.random() * 6.28, flip: .35 + Math.random() * .5, wait }) as Leaf;
+   return Object.assign(leaf, { x, y, age: 0, size: min + Math.random() * (max - min), sprite: sprites[layer][Math.floor(Math.random() * colors.length)], phase: Math.random() * 6.28, swing: .7 + Math.random() * .5, amp: 22 + Math.random() * 26, drift: 4 + Math.random() * 8, spin: (Math.random() - .5) * .5, rotation: Math.random() * 6.28, flip: .35 + Math.random() * .5, wait, vx: 0, vy: 0 }) as Leaf;
   };
   const calm = media.matches, pace = calm ? .6 : 1;
   const count = calm ? 3 : innerWidth < 760 ? 5 : 8;
   // Mostly mid-depth leaves, a couple far away and one large one in front (none with reduced motion).
   for (let i = 0; i < count; i++) leaves.push(spawn({ layer: !calm && i === 0 ? 2 : i % 3 === 1 ? 0 : 1 }, 1.2 + i * 1.6 + Math.random() * 2.5));
+  // Extra leaves (released by touch or shake) fall once and are dropped; capped so a long play stays light.
+  const MAX_EXTRA = calm ? 12 : 48;
+  const extra = (pageX: number, pageY: number, wait: number, push: number) => {
+   if (leaves.filter(l => l.extra).length >= MAX_EXTRA) return;
+   const box = hero.getBoundingClientRect(), leaf = spawn({ layer: Math.random() < .2 ? 0 : Math.random() < .85 ? 1 : 2, extra: true }, wait);
+   leaf.x = pageX - box.left - scrollX; leaf.y = pageY - box.top - scrollY; leaf.age = .5;
+   // A small outward toss, mostly sideways and a little upward, that the air slows down.
+   const angle = Math.random() * Math.PI * 2;
+   leaf.vx = Math.cos(angle) * push * (.5 + Math.random()); leaf.vy = -Math.abs(Math.sin(angle)) * push * .6 * Math.random();
+   leaves.push(leaf);
+  };
+  if (control) control.current = {
+   release: (x, y, n) => { for (let i = 0; i < n; i++) extra(x + (Math.random() - .5) * 30, y + (Math.random() - .5) * 30, i * .05, 50); start(); },
+   shower: () => {
+    const crown = source.current; if (!crown) return;
+    for (let i = 0; i < (calm ? 8 : 26); i++) extra(crown.x + crown.width * (.05 + Math.random() * .9), crown.y + crown.height * (.15 + Math.random() * .65), Math.random() * .7, 120);
+    start();
+   },
+  };
   let frame = 0, previous = 0, visible = true;
   const resize = () => {
    const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -60,18 +82,19 @@ export default function FallingLeaves({ source }: { source: { current: PageRect 
    // Waits run on wall-clock time; motion steps are capped so a slow frame never teleports a leaf.
    const real = previous ? (now - previous) / 1000 : 0, dt = Math.min(real, .1); previous = now;
    context.clearRect(0, 0, width, height);
-   for (const leaf of leaves) {
-    if (leaf.wait > 0) { leaf.wait -= real; if (leaf.wait <= 0) spawn(leaf, 0); continue; }
+   for (const leaf of [...leaves]) {
+    if (leaf.wait > 0) { leaf.wait -= real; if (leaf.wait <= 0 && !leaf.extra) spawn(leaf, 0); continue; }
     const layer = layers[leaf.layer];
     leaf.age += dt * pace;
     const angle = leaf.age * leaf.swing + leaf.phase, sway = Math.cos(angle);
     // Faster through the middle of the swing, almost hovering at its ends.
-    leaf.y += layer.fall * pace * dt * (.45 + .75 * Math.abs(sway));
-    leaf.x += (sway * leaf.amp * leaf.swing + leaf.drift) * pace * dt;
+    leaf.y += (layer.fall * pace * (.45 + .75 * Math.abs(sway)) + leaf.vy) * dt;
+    leaf.x += ((sway * leaf.amp * leaf.swing + leaf.drift) * pace + leaf.vx) * dt;
+    const drag = Math.exp(-dt * 1.8); leaf.vx *= drag; leaf.vy *= drag;
     leaf.rotation += leaf.spin * pace * dt;
     // Fades in as it lets go of the crown and out over the last quarter of the hero.
     const fade = Math.min(1, leaf.age / .8, (height * .92 - leaf.y) / (height * .25));
-    if (fade <= 0 || leaf.x > width + 60) { spawn(leaf, 2 + Math.random() * 5); continue; }
+    if (fade <= 0 || leaf.x > width + 60 || leaf.x < -60) { if (leaf.extra) leaves.splice(leaves.indexOf(leaf), 1); else spawn(leaf, 2 + Math.random() * 5); continue; }
     context.save(); context.globalAlpha = layer.alpha * fade; context.translate(leaf.x, leaf.y);
     context.rotate(leaf.rotation + sway * .55);
     context.scale(.35 + .65 * Math.abs(Math.cos(leaf.age * leaf.flip + leaf.phase)), 1);
