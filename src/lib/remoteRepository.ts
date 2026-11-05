@@ -2,7 +2,7 @@ import { catalogSchema, type Catalog } from './schema.ts';
 import { serializeBackup } from './catalog.ts';
 import { upgradeSeed } from '../data/upgrade.ts';
 import { initialCatalog } from '../data/initial.ts';
-import { SUPABASE, supabase } from './supabase.ts';
+import { SITE, SUPABASE, supabase, isAdmin } from './supabase.ts';
 import { StaleCatalogError, type CatalogRepository } from './repository.ts';
 
 export class NotAdminError extends Error {
@@ -15,7 +15,7 @@ type Row = { revision: number; data: unknown };
 
 // Public read through the REST API (no client library): the catalog row, or null before the first save.
 export async function fetchCatalogRow(fetcher: typeof fetch = fetch): Promise<Row | null> {
-  const response = await fetcher(`${SUPABASE.url}/rest/v1/catalog?id=eq.current&select=revision,data`, { headers: { apikey: SUPABASE.key, Authorization: `Bearer ${SUPABASE.key}` } });
+  const response = await fetcher(`${SUPABASE.url}/rest/v1/catalog?id=eq.current&select=revision,data`, { headers: { apikey: SUPABASE.key, Authorization: `Bearer ${SUPABASE.key}`, 'Accept-Profile': SITE } });
   if (!response.ok) throw new Error(`Catálogo indisponível (${response.status}).`);
   const rows = await response.json() as Row[];
   return rows[0] ?? null;
@@ -58,7 +58,7 @@ async function uploadPhotos(catalog: Catalog): Promise<Catalog> {
   };
 }
 
-// The catalog lives in one row of public.catalog with a revision: a save only applies on top of the revision it was
+// The catalog lives in one row of bonsai.catalog with a revision: a save only applies on top of the revision it was
 // edited from, so two curators (or two tabs) never overwrite each other silently.
 export function createRemoteRepository(): CatalogRepository {
   let knownRevision = 0;
@@ -82,7 +82,7 @@ export function createRemoteRepository(): CatalogRepository {
       } else {
         const { data: rows, error } = await db.from('catalog').update({ data, revision: knownRevision + 1 }).eq('id', 'current').eq('revision', knownRevision).select('revision');
         if (error) throw error;
-        if (!rows?.length) { const { data: admin } = await db.rpc('is_admin'); throw admin === true ? new StaleCatalogError() : new NotAdminError(); }
+        if (!rows?.length) throw await isAdmin() ? new StaleCatalogError() : new NotAdminError();
         knownRevision += 1;
       }
       return data;

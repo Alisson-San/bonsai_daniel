@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Crosshair, FlipHorizontal2, RotateCcw, RotateCw, Undo2, X } from 'lucide-react';
+import { encodeCanvas } from '../lib/media';
 
 const ASPECTS = [['original', 'Original'], ['1', '1:1'], ['0.8', '4:5'], ['0.75', '3:4'], ['1.7778', '16:9']] as const;
 const MAX_SIDE = 2000;
@@ -103,7 +104,7 @@ export default function PhotoAdjuster({ src, title = 'Ajustar foto', onApply, on
         c.putImageData(pixels, 0, 0);
       }
       for (let i = 3; i < data.length; i += 16) if (data[i] < 255) { transparent = true; break; }
-      onApply(transparent ? canvas.toDataURL('image/webp', .9) : canvas.toDataURL('image/jpeg', .88));
+      onApply(encodeCanvas(canvas, transparent));
     } catch { setFailed(true); }
     finally { setBusy(false); }
   };
