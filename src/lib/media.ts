@@ -1,10 +1,18 @@
-import type { Plant } from './schema';
-import { coverOf } from './catalog';
+import type { Plant } from './schema.ts';
+import { coverOf } from './catalog.ts';
 
 // Photos are reduced in the browser before anything else: a phone photo (4000 px, ~5 MB) becomes at most 2000 px on
-// the long side, ~300–600 KB, which is plenty for the site and keeps saving fast. Images with transparency (cut-outs)
-// stay WebP with alpha; the rest become JPEG. GIFs are kept as they are (animation).
+// the long side, ~200–400 KB, which is plenty for the site and saves storage and bandwidth. Everything becomes WebP
+// (alpha included); browsers whose canvas cannot encode WebP fall back to JPEG, or WebP/PNG for transparency. GIFs
+// are kept as they are (animation). The bucket allows 3 MB per file, far above this output.
 const MAX_SIDE = 2000;
+export const WEBP_QUALITY = .82, JPEG_QUALITY = .86;
+// Encodes a canvas as WebP when the browser can (toDataURL silently returns PNG otherwise), else JPEG.
+export function encodeCanvas(canvas: Pick<HTMLCanvasElement, 'toDataURL'>, transparent: boolean): string {
+  const webp = canvas.toDataURL('image/webp', WEBP_QUALITY);
+  if (webp.startsWith('data:image/webp')) return webp;
+  return transparent ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+}
 export async function fileToImage(file: File): Promise<string> {
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new Error('Escolha uma imagem JPEG, PNG, WebP ou GIF.');
   if (file.size > 40_000_000) throw new Error('Cada imagem pode ter até 40 MB.');
@@ -28,8 +36,8 @@ export async function fileToImage(file: File): Promise<string> {
   if (!context) return data;
   context.drawImage(img, 0, 0, canvas.width, canvas.height);
   const transparent = file.type !== 'image/jpeg' && context.getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 === 3 && value < 255);
-  const reduced = transparent ? canvas.toDataURL('image/webp', .9) : canvas.toDataURL('image/jpeg', .86);
-  // Browsers without WebP encoding return PNG; keep whichever is smaller.
+  const reduced = encodeCanvas(canvas, transparent);
+  // Keep the original when re-encoding does not make it smaller.
   return reduced.length < data.length ? reduced : data;
 }
 export function downloadFile(blob: Blob, name: string) {

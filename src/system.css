@@ -669,3 +669,18 @@
  .adjust-actions{padding:10px 16px}
  .adjust-actions .button{padding:0 16px}
 }
+
+/* Footer credit: discreet, same family as the footer text, lower contrast than the copyright line. */
+.site-credit{display:block;margin-top:4px;font-size:10px;letter-spacing:.04em;color:var(--muted);opacity:.62;text-decoration:none;transition:opacity .2s,color .2s}
+.site-credit:hover,.site-credit:focus-visible{opacity:1;color:var(--gold);text-decoration:underline;text-underline-offset:3px}
+
+/* Admin management (curation) */
+.admin-manager{max-height:none}
+.admin-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.admin-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;font-size:14px;overflow-wrap:anywhere}
+.admin-list li+li{border-top:1px solid var(--line)}
+.admin-list small{color:var(--muted)}
+.admin-list .admin-empty{color:var(--muted)}
+.admin-form{display:flex;flex-direction:column;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
+.admin-form h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px;color:var(--gold)}
+.admin-hint{font-size:12px;color:var(--muted);line-height:1.5}
